@@ -17,6 +17,7 @@
 #ifndef _COMMON_H
 #define _COMMON_H
 
+#include "config.h"
 
 #if HAVE_ERR_H
 # include <err.h>
@@ -48,8 +49,8 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <poll.h>
-#include "../config.h"
 #include <netdb.h>
+#include <sys/time.h>
 #else
 # include "../include/sys/event.h"
 # include "../src/windows/platform.h"
