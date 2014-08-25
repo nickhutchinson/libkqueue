@@ -14,7 +14,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-# define _GNU_SOURCE
 # include <poll.h>
 #include "../common/private.h"
 

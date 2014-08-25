@@ -46,7 +46,6 @@ struct filter;
 /*
  * Get the current thread ID
  */
-# define _GNU_SOURCE
 # include <linux/unistd.h>
 # include <unistd.h>
 #ifndef __ANDROID__
