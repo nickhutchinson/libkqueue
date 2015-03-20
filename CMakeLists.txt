@@ -14,10 +14,12 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.7)
 include(CheckIncludeFile)
 
 project(kqueue C)
+set(KQUEUE_VERSION 2.0.4)
+set(KQUEUE_ABI_VERSION 0)
 
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE MinSizeRel)
@@ -42,83 +44,81 @@ file(GLOB_RECURSE INCL include/*.h)
 source_group(includes FILES ${INCL})
 
 if(WIN32)
-	file(GLOB SRC 
-		src/windows/*.h
-		src/windows/*.c
+    file(GLOB SRC
+        src/windows/*.h
+        src/windows/*.c
         src/common/*.h
-		src/*.c
+        src/*.c
         src/common/map.c
         src/common/filter.c
         src/common/knote.c
         src/common/kevent.c
         src/common/kqueue.c
-	)
-	add_definitions(
-		-D_USRDLL
-		-D_WINDLL
-	)
+    )
+    add_definitions(
+        -D_USRDLL
+        -D_WINDLL
+    )
     if(MINGW)
         SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}  -march=i486")
         SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -march=i486")
     endif()
 else()
-	file(GLOB SRC 
-		src/posix/*.h
-		src/posix/platform.c
-		src/linux/*.h
-		src/linux/platform.c
-		src/linux/signal.c
-		src/linux/socket.c
-		src/linux/timer.c
-		src/linux/user.c
-		src/linux/vnode.c
-		src/linux/write.c
-		src/linux/read.c
-		src/common/*.h
-		src/common/filter.c
-		src/common/knote.c
-		src/common/map.c
-		src/common/kevent.c
-		src/common/kqueue.c		
-	)
-	include_directories(
-		src/common
-	)
-	add_definitions(
-		-Wall -Werror
-		-fpic
-		-D_XOPEN_SOURCE=600
-		-D_GNU_SOURCE
-		-std=c99
-		-fvisibility=hidden
-	)
+    file(GLOB SRC
+        src/posix/*.h
+        src/posix/platform.c
+        src/linux/*.h
+        src/linux/platform.c
+        src/linux/signal.c
+        src/linux/socket.c
+        src/linux/timer.c
+        src/linux/user.c
+        src/linux/vnode.c
+        src/linux/write.c
+        src/linux/read.c
+        src/common/*.h
+        src/common/filter.c
+        src/common/knote.c
+        src/common/map.c
+        src/common/kevent.c
+        src/common/kqueue.c
+    )
+    include_directories(
+        src/common
+    )
+    add_definitions(
+        -Wall -Wextra
+        -Wno-missing-field-initializers
+        -fPIC
+        -D_XOPEN_SOURCE=600
+        -D_GNU_SOURCE
+        -std=c99
+        -fvisibility=hidden
+    )
 endif()
 source_group(src FILES ${SRC})
 
 #includes
-include_directories(
-	include
-)
+include_directories( include )
 
 #library (static or shared)
-option(STATIC_KQUEUE "Enable to build libkqueue as static lib" OFF)
-if(STATIC_KQUEUE)
-	message("-- building libkqueue as static lib")
-    add_library(kqueue STATIC ${SRC} ${INCL})
-else()
-    add_library(kqueue SHARED ${SRC} ${INCL})
-endif()
+add_library(kqueue_shared STATIC ${SRC} ${INCL})
+add_library(kqueue_static SHARED ${SRC} ${INCL})
 
-if(WIN32)
-	set(LIB Ws2_32)
-endif()
-if(NOT WIN32)
-	set(LIB pthread)
-endif()
-target_link_libraries(kqueue ${LIB})
-set_target_properties(kqueue PROPERTIES
-    DEBUG_POSTFIX "D"
-    DEFINE_SYMBOL LIBKQUEUE_EXPORTS)
+set_target_properties(kqueue_shared kqueue_static PROPERTIES
+    OUTPUT_NAME kqueue
+    SOVERSION ${KQUEUE_ABI_VERSION}
+    VERSION ${KQUEUE_VERSION}
+)
+
+foreach(target kqueue_shared kqueue_static)
+    if(WIN32)
+        target_link_libraries(${target} ws2_32)
+    endif()
+    if (UNIX)
+        target_link_libraries(${target} -pthread)
+    endif ()
+endforeach ()
 
 #tests
 option(KQUEUE_TESTS "Enable to build tests for libkqueue" OFF)
@@ -127,7 +127,7 @@ if(KQUEUE_TESTS)
     add_subdirectory(test)
 endif()
 
-install(TARGETS kqueue
+install(TARGETS kqueue_shared kqueue_static
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib)
 install(DIRECTORY include/ DESTINATION include)

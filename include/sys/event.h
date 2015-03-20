@@ -31,20 +31,28 @@
 #define _SYS_EVENT_H_
 
 #include <sys/types.h>
+#include <stdint.h>
 
-#ifdef __KERNEL__
-#define intptr_t long
+#ifdef _WIN32
+typedef struct {
+	time_t tv_sec;
+	long tv_nsec;
+} kq_timespec_s;
 #else
-#include <sys/types.h> 
-#if defined(_WIN32) && _MSC_VER < 1600 && !defined(__MINGW32__)
-# include "../../src/windows/stdint.h"
-#else
-# include <stdint.h>
-#endif
-#define LIBKQUEUE       1
+typedef struct timespec kq_timespec_s;
 #endif
 
-struct timespec;
+#ifndef KQ_EXPORT
+#if defined(_WIN32) && defined(__cplusplus)
+#define KQ_EXPORT extern "C" __declspec(dllimport)
+#elif defined(_WIN32)
+#define KQ_EXPORT extern __declspec(dllimport)
+#elif defined (__cplusplus)
+#define KQ_EXPORT extern "C"
+#else
+#define KQ_EXPORT extern
+#endif
+#endif /* KQ_EXPORT */
 
 #define EVFILT_READ		(-1)
 #define EVFILT_WRITE		(-2)
@@ -170,43 +178,14 @@ struct kevent {
 
 
 #ifndef __KERNEL__
-#ifdef  __cplusplus
-extern "C" {
-#endif
 
-#ifdef _WIN32
+KQ_EXPORT
+int kqueue(void);
 
-struct timespec {
-    time_t  tv_sec;
-    long    tv_nsec;
-};
+KQ_EXPORT
+int kevent(int kq, const struct kevent *changelist, int nchanges,
+           struct kevent *eventlist, int nevents, const kq_timespec_s *timeout);
 
-__declspec(dllexport) int
-kqueue(void);
-
-__declspec(dllexport) int
-kevent(int kq, const struct kevent *changelist, int nchanges,
-	    struct kevent *eventlist, int nevents,
-	    const struct timespec *timeout);
-
-#ifdef MAKE_STATIC
-__declspec(dllexport) int
-libkqueue_init();
-#endif
-
-#else
-int     kqueue(void);
-int     kevent(int kq, const struct kevent *changelist, int nchanges,
-	    struct kevent *eventlist, int nevents,
-	    const struct timespec *timeout);
-#ifdef MAKE_STATIC
-int     libkqueue_init();
-#endif
-#endif
-
-#ifdef  __cplusplus
-}
-#endif
 #endif /* !__KERNEL__* */
 
 #endif /* !_SYS_EVENT_H_ */
