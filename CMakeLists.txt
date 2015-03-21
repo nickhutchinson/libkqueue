@@ -130,4 +130,4 @@ endif()
 install(TARGETS kqueue_shared kqueue_static
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib)
-install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY include/ DESTINATION include/kqueue)
