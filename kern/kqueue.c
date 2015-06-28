@@ -205,11 +205,6 @@ static ssize_t kqueue_write(struct file *file, const char __user *buf,
         if (filt == NULL)
             return -EINVAL;
 
-#ifdef DEADWOOD
-        spin_lock(&kq->kq_lock);
-        printk("%zu bytes, nchanges=%zu", lbuf, nchanges);
-        spin_unlock(&kq->kq_lock);
-#endif
 
         buf += sizeof(kev);
     }
