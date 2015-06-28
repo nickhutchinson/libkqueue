@@ -46,7 +46,7 @@ const struct kqueue_vtable kqops = {
 int
 windows_kqueue_init(struct kqueue *kq)
 {
-    kq->kq_iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 
+    kq->kq_iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL,
                                          (ULONG_PTR) 0, 0);
     if (kq->kq_iocp == NULL) {
         dbg_lasterror("CreateIoCompletionPort");
@@ -54,10 +54,10 @@ windows_kqueue_init(struct kqueue *kq)
     }
 
 
-	if(filter_register_all(kq) < 0) {
-		CloseHandle(kq->kq_iocp);
-		return (-1);
-	}
+    if(filter_register_all(kq) < 0) {
+        CloseHandle(kq->kq_iocp);
+        return (-1);
+    }
 
     return (0);
 }
@@ -72,10 +72,10 @@ windows_kqueue_free(struct kqueue *kq)
 int
 windows_kevent_wait(struct kqueue *kq, int no, const struct timespec *timeout)
 {
-	int retval;
+    int retval;
     DWORD       timeout_ms;
     BOOL        success;
-    
+
     if (timeout == NULL) {
         timeout_ms = INFINITE;
     } else if ( timeout->tv_sec == 0 && timeout->tv_nsec < 1000000 ) {
@@ -94,10 +94,10 @@ windows_kevent_wait(struct kqueue *kq, int no, const struct timespec *timeout)
 #if 0
     if(timeout_ms <= 0)
         dbg_printf("Woop, not waiting !?");
-#endif        
+#endif
     memset(&iocp_buf, 0, sizeof(iocp_buf));
-    success = GetQueuedCompletionStatus(kq->kq_iocp, 
-            &iocp_buf.bytes, &iocp_buf.key, &iocp_buf.overlap, 
+    success = GetQueuedCompletionStatus(kq->kq_iocp,
+            &iocp_buf.bytes, &iocp_buf.key, &iocp_buf.overlap,
             timeout_ms);
     if (success) {
         return (1);
@@ -118,7 +118,7 @@ windows_kevent_copyout(struct kqueue *kq, int nready,
         struct kevent *eventlist, int nevents)
 {
     struct filter *filt;
-	struct knote* kn;
+    struct knote* kn;
     int rv, nret;
 
     //FIXME: not true for EVFILT_IOCP
@@ -137,7 +137,7 @@ windows_kevent_copyout(struct kqueue *kq, int nready,
      * Certain flags cause the associated knote to be deleted
      * or disabled.
      */
-    if (eventlist->flags & EV_DISPATCH) 
+    if (eventlist->flags & EV_DISPATCH)
         knote_disable(filt, kn); //TODO: Error checking
     if (eventlist->flags & EV_ONESHOT)
         knote_delete(filt, kn); //TODO: Error checking
@@ -150,17 +150,17 @@ windows_kevent_copyout(struct kqueue *kq, int nready,
         nret--;
     }
 
-	return nret;
+    return nret;
 }
 
 int
 windows_filter_init(struct kqueue *kq, struct filter *kf)
 {
 
-	kq->kq_filt_ref[kq->kq_filt_count] = (struct filter *) kf;
+    kq->kq_filt_ref[kq->kq_filt_count] = (struct filter *) kf;
     kq->kq_filt_count++;
 
-	return (0);
+    return (0);
 }
 
 void
@@ -192,7 +192,7 @@ windows_get_descriptor_type(struct knote *kn)
         slen = sizeof(lsock);
         lsock = 0;
         i = getsockopt(kn->kev.ident, SOL_SOCKET, SO_ACCEPTCONN, (char *) &lsock, &slen);
-        if (i == 0 && lsock) 
+        if (i == 0 && lsock)
             kn->kn_flags |= KNFL_PASSIVE_SOCKET;
     }
 

@@ -30,7 +30,7 @@ kevent_filter_dump(const struct kevent *kev)
 {
     static __thread char buf[64];
 
-    snprintf(&buf[0], sizeof(buf), "%d (%s)", 
+    snprintf(&buf[0], sizeof(buf), "%d (%s)",
             kev->filter, filter_name(kev->filter));
     return ((const char *) &buf[0]);
 }
@@ -75,7 +75,7 @@ kevent_flags_dump(const struct kevent *kev)
 
 #define KEVFL_DUMP(attrib) \
     if (kev->flags & attrib) \
-	strncat((char *) &buf[0], #attrib" ", 64);
+    strncat((char *) &buf[0], #attrib" ", 64);
 
     snprintf(buf, sizeof(buf), "flags=0x%04x (", kev->flags);
     KEVFL_DUMP(EV_ADD);
@@ -100,7 +100,7 @@ kevent_dump(const struct kevent *kev)
 {
     static __thread char buf[1024];
 
-    snprintf((char *) &buf[0], sizeof(buf), 
+    snprintf((char *) &buf[0], sizeof(buf),
             "{ ident=%d, filter=%s, %s, %s, data=%d, udata=%p }",
             (u_int) kev->ident,
             kevent_filter_dump(kev),
@@ -125,7 +125,7 @@ kevent_copyin_one(struct kqueue *kq, const struct kevent *src)
         return (-1);
     }
 
-    if (filter_lookup(&filt, kq, src->filter) < 0) 
+    if (filter_lookup(&filt, kq, src->filter) < 0)
         return (-1);
 
     dbg_printf("src=%s", kevent_dump(src));
@@ -141,13 +141,13 @@ kevent_copyin_one(struct kqueue *kq, const struct kevent *src)
             memcpy(&kn->kev, src, sizeof(kn->kev));
             kn->kev.flags &= ~EV_ENABLE;
             kn->kev.flags |= EV_ADD;//FIXME why?
-			kn->kn_kq = kq;
+            kn->kn_kq = kq;
             assert(filt->kn_create);
             if (filt->kn_create(filt, kn) < 0) {
                 knote_release(kn);
                 errno = EFAULT;
                 return (-1);
-            } 
+            }
             knote_insert(filt, kn);
             dbg_printf("created kevent %s", kevent_dump(src));
 
@@ -160,7 +160,7 @@ kevent_copyin_one(struct kqueue *kq, const struct kevent *src)
 
             return (0);
         } else {
-            dbg_printf("no entry found for ident=%u", (unsigned int)src->ident); 
+            dbg_printf("no entry found for ident=%u", (unsigned int)src->ident);
             errno = ENOENT;
             return (-1);
         }
@@ -237,7 +237,7 @@ kevent(int kqfd, const struct kevent *changelist, int nchanges,
     static unsigned int _kevent_counter = 0;
     unsigned int myid = 0;
 
-    (void) myid;
+    (void)myid;
 #endif
 
     /* Convert the descriptor into an object pointer */
@@ -250,7 +250,8 @@ kevent(int kqfd, const struct kevent *changelist, int nchanges,
 #ifndef NDEBUG
     if (DEBUG_KQUEUE) {
         myid = atomic_inc(&_kevent_counter);
-        dbg_printf("--- kevent %u --- (nchanges = %d, nevents = %d)", myid, nchanges, nevents);
+        dbg_printf("--- kevent %u --- (nchanges = %d, nevents = %d)", myid,
+                   nchanges, nevents);
     }
 #endif
 
@@ -271,7 +272,7 @@ kevent(int kqfd, const struct kevent *changelist, int nchanges,
     }
 
     rv = 0;
-    
+
     /*
      * Wait for events and copy them to the eventlist
      */
@@ -298,7 +299,8 @@ kevent(int kqfd, const struct kevent *changelist, int nchanges,
 
         dbg_printf("(%u) returning %d events", myid, rv);
         for (n = 0; n < rv; n++) {
-	    dbg_printf("(%u) eventlist[%d] = %s", myid, n, kevent_dump(&eventlist[n]));
+            dbg_printf("(%u) eventlist[%d] = %s", myid, n,
+                       kevent_dump(&eventlist[n]));
         }
     }
 #endif

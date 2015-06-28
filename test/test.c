@@ -31,13 +31,13 @@ static void
 error_handler(int signum)
 {
 #if defined(__linux__) && !defined(__ANDROID__)
-	void *buf[32];
+    void *buf[32];
 
     /* FIXME: the symbols aren't printing */
-	printf("***** ERROR: Program received signal %d *****\n", signum);
-	backtrace_symbols_fd(buf, sizeof(buf) / sizeof(void *), 2);
+    printf("***** ERROR: Program received signal %d *****\n", signum);
+    backtrace_symbols_fd(buf, sizeof(buf) / sizeof(void *), 2);
 #else
-	printf("***** ERROR: Program received signal %d *****\n", signum);
+    printf("***** ERROR: Program received signal %d *****\n", signum);
 #endif
     exit(1);
 }
@@ -107,6 +107,6 @@ testing_make_uid(void)
     if (id == INT_MAX)
         abort();
     id++;
-    
+
     return (id);
 }

@@ -163,7 +163,7 @@ struct kevent {
 #define NOTE_LINKDOWN	0x0002			/* link is down */
 #define NOTE_LINKINV	0x0004			/* link state is invalid */
 
-/* KLUDGE: This is from <sys/mount.h> on FreeBSD and is used by 
+/* KLUDGE: This is from <sys/mount.h> on FreeBSD and is used by
            the EVFILT_FS filter. */
 /* vfsquery flags */
 #define VQ_NOTRESP      0x0001  /* server down */

@@ -51,15 +51,15 @@ test_kqueue_descriptor_is_pollable(void)
 }
 
 /*
- * Test the method for detecting when one end of a socketpair 
+ * Test the method for detecting when one end of a socketpair
  * has been closed. This technique is used in kqueue_validate()
  */
 static void
 test_peer_close_detection(void *unused)
 {
 #ifdef _WIN32
-	return;
-	//FIXME
+    return;
+    //FIXME
 #else
     int sockfd[2];
     char buf[1];
@@ -72,14 +72,14 @@ test_peer_close_detection(void *unused)
     pfd.events = POLLIN | POLLHUP;
     pfd.revents = 0;
 
-    if (poll(&pfd, 1, 0) > 0) 
+    if (poll(&pfd, 1, 0) > 0)
         die("unexpected data");
 
     if (close(sockfd[1]) < 0)
         die("close");
 
     if (poll(&pfd, 1, 0) > 0) {
-        if (recv(sockfd[0], buf, sizeof(buf), MSG_PEEK | MSG_DONTWAIT) != 0) 
+        if (recv(sockfd[0], buf, sizeof(buf), MSG_PEEK | MSG_DONTWAIT) != 0)
             die("failed to detect peer shutdown");
     }
 #endif
@@ -164,7 +164,7 @@ test_harness(struct unit_test tests[MAX_TESTS], int iterations)
         die("kqueue()");
 
     test(ev_receipt, ctx);
-    /* TODO: this fails now, but would be good later 
+    /* TODO: this fails now, but would be good later
     test(kqueue_descriptor_is_pollable);
     */
 
@@ -200,7 +200,7 @@ usage(void)
     exit(1);
 }
 
-int 
+int
 main(int argc, char **argv)
 {
     struct unit_test tests[MAX_TESTS] = {
@@ -212,9 +212,9 @@ main(int argc, char **argv)
 #if FIXME
         { "proc", 1, test_evfilt_proc },
 #endif
-		{ "timer", 1, test_evfilt_timer },
+        { "timer", 1, test_evfilt_timer },
 #ifndef _WIN32
-		{ "vnode", 1, test_evfilt_vnode },
+        { "vnode", 1, test_evfilt_vnode },
 #endif
 #ifdef EVFILT_USER
         { "user", 1, test_evfilt_user },
@@ -229,7 +229,7 @@ main(int argc, char **argv)
 #ifdef _WIN32
     /* Initialize the Winsock library */
     WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) 
+    if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0)
         err(1, "WSAStartup failed");
 #endif
 

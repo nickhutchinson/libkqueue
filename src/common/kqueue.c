@@ -47,7 +47,7 @@ get_fd_limit(void)
     return 65536;
 #else
     struct rlimit rlim;
-    
+
     if (getrlimit(RLIMIT_NOFILE, &rlim) < 0) {
         dbg_perror("getrlimit(2)");
         return (65536);
@@ -72,24 +72,24 @@ libkqueue_init(void)
 #ifdef _WIN32
     /* Initialize the Winsock library */
     WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) 
+    if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0)
         abort();
 #endif
 
 # if defined(_WIN32) && !defined(__GNUC__)
-	/* Enable heap surveillance */
-	{
-		int tmpFlag = _CrtSetDbgFlag( _CRTDBG_REPORT_FLAG );
-		tmpFlag |= _CRTDBG_CHECK_ALWAYS_DF;
-		_CrtSetDbgFlag(tmpFlag);
-	}
+    /* Enable heap surveillance */
+    {
+        int tmpFlag = _CrtSetDbgFlag( _CRTDBG_REPORT_FLAG );
+        tmpFlag |= _CRTDBG_CHECK_ALWAYS_DF;
+        _CrtSetDbgFlag(tmpFlag);
+    }
 # endif /* _WIN32 */
     }
 #endif
 
    kqmap = map_new(get_fd_limit()); // INT_MAX
    if (kqmap == NULL)
-       abort(); 
+       abort();
    if (knote_init() < 0)
        abort();
    dbg_puts("library initialization complete");
@@ -108,7 +108,7 @@ kqueue_lookup(int kq)
 int VISIBLE
 kqueue(void)
 {
-	struct kqueue *kq;
+    struct kqueue *kq;
     struct kqueue *tmp;
 
 #ifdef _WIN32
@@ -129,7 +129,7 @@ kqueue(void)
     if (kq == NULL)
         return (-1);
 
-	tracing_mutex_init(&kq->kq_mtx, NULL);
+    tracing_mutex_init(&kq->kq_mtx, NULL);
 
     if (kqops.kqueue_init(kq) < 0) {
         free(kq);

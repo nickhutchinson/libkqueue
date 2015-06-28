@@ -63,16 +63,16 @@ struct eventfd {
 #endif
 };
 
-/* 
+/*
  * Flags used by knote->kn_flags
  */
 #define KNFL_PASSIVE_SOCKET  (0x01)  /* Socket is in listen(2) mode */
 #define KNFL_REGULAR_FILE    (0x02)  /* File descriptor is a regular file */
 #define KNFL_KNOTE_DELETED   (0x10)  /* The knote object is no longer valid */
- 
+
 struct knote {
     struct kevent     kev;
-    int               kn_flags;       
+    int               kn_flags;
     union {
         /* OLD */
         int           pfd;       /* Used by timerfd */
@@ -81,11 +81,11 @@ struct knote {
             nlink_t   nlink;  /* Used by vnode */
             off_t     size;   /* Used by vnode */
         } vnode;
-        timer_t       timerid;  
+        timer_t       timerid;
         struct sleepreq *sleepreq; /* Used by posix/timer.c */
-		void          *handle;      /* Used by win32 filters */
+        void          *handle;      /* Used by win32 filters */
     } data;
-	struct kqueue*	   kn_kq;
+    struct kqueue*       kn_kq;
     volatile uint32_t  kn_ref;
 #if defined(KNOTE_PLATFORM_SPECIFIC)
     KNOTE_PLATFORM_SPECIFIC;
@@ -113,7 +113,7 @@ struct filter {
     /* knote operations */
 
     int     (*kn_create)(struct filter *, struct knote *);
-    int     (*kn_modify)(struct filter *, struct knote *, 
+    int     (*kn_modify)(struct filter *, struct knote *,
                             const struct kevent *);
     int     (*kn_delete)(struct filter *, struct knote *);
     int     (*kn_enable)(struct filter *, struct knote *);
@@ -126,7 +126,7 @@ struct filter {
     int       kf_wfd;                   /* fd to write when an event occurs */
     //----?
 
-    struct evfilt_data *kf_data;	    /* filter-specific data */
+    struct evfilt_data *kf_data;        /* filter-specific data */
     RB_HEAD(knt, knote) kf_knote;
     pthread_rwlock_t    kf_knote_mtx;
     struct kqueue      *kf_kqueue;
@@ -141,7 +141,7 @@ struct filter {
 struct kqueue {
     int             kq_id;
     struct filter   kq_filt[EVFILT_SYSCOUNT];
-    fd_set          kq_fds, kq_rfds; 
+    fd_set          kq_fds, kq_rfds;
     int             kq_nfds;
     tracing_mutex_t kq_mtx;
     volatile uint32_t kq_ref;
@@ -157,7 +157,7 @@ struct kqueue_vtable {
     // @param timespec can be given as timeout
     // @param int the number of events to wait for
     // @param kqueue the queue to wait on
-	int  (*kevent_wait)(struct kqueue *, int, const struct timespec *);
+    int  (*kevent_wait)(struct kqueue *, int, const struct timespec *);
     // @param kqueue the queue to look at
     // @param int The number of events that should be ready
     // @param kevent the structure to copy the events into
@@ -195,13 +195,13 @@ int  knote_disable(struct filter *, struct knote *);
 #define knote_get_filter(knt) &((knt)->kn_kq->kq_filt[(knt)->kev.filter])
 
 int         filter_lookup(struct filter **, struct kqueue *, short);
-int      	filter_register_all(struct kqueue *);
-void     	filter_unregister_all(struct kqueue *);
+int          filter_register_all(struct kqueue *);
+void         filter_unregister_all(struct kqueue *);
 const char *filter_name(short);
 
 int         kevent_wait(struct kqueue *, const struct timespec *);
 int         kevent_copyout(struct kqueue *, int, struct kevent *, int);
-void 		kevent_free(struct kqueue *);
+void         kevent_free(struct kqueue *);
 const char *kevent_dump(const struct kevent *);
 struct kqueue * kqueue_lookup(int);
 int         kqueue_validate(struct kqueue *);

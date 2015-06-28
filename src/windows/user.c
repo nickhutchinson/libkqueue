@@ -31,7 +31,7 @@ int
 evfilt_user_copyout(struct kevent* dst, struct knote* src, void* ptr)
 {
     memcpy(dst, &src->kev, sizeof(struct kevent));
-	
+
     dst->fflags &= ~NOTE_FFCTRLMASK;     //FIXME: Not sure if needed
     dst->fflags &= ~NOTE_TRIGGER;
     if (src->kev.flags & EV_ADD) {
@@ -45,17 +45,17 @@ evfilt_user_copyout(struct kevent* dst, struct knote* src, void* ptr)
     if (src->kev.flags & EV_DISPATCH)
         src->kev.fflags &= ~NOTE_TRIGGER;
 
-	return (0);
+    return (0);
 }
 
 int
 evfilt_user_knote_create(struct filter *filt, struct knote *kn)
 {
-	return (0);
+    return (0);
 }
 
 int
-evfilt_user_knote_modify(struct filter *filt, struct knote *kn, 
+evfilt_user_knote_modify(struct filter *filt, struct knote *kn,
         const struct kevent *kev)
 {
     unsigned int ffctrl;
@@ -87,10 +87,10 @@ evfilt_user_knote_modify(struct filter *filt, struct knote *kn,
 
     if ((!(kn->kev.flags & EV_DISABLE)) && kev->fflags & NOTE_TRIGGER) {
         kn->kev.fflags |= NOTE_TRIGGER;
-		if (!PostQueuedCompletionStatus(kn->kn_kq->kq_iocp, 1, (ULONG_PTR) 0, (LPOVERLAPPED) kn)) {
-			dbg_lasterror("PostQueuedCompletionStatus()");
-			return (-1);
-		}
+        if (!PostQueuedCompletionStatus(kn->kn_kq->kq_iocp, 1, (ULONG_PTR) 0, (LPOVERLAPPED) kn)) {
+            dbg_lasterror("PostQueuedCompletionStatus()");
+            return (-1);
+        }
     }
 
     return (0);
@@ -123,5 +123,5 @@ const struct filter evfilt_user = {
     evfilt_user_knote_modify,
     evfilt_user_knote_delete,
     evfilt_user_knote_enable,
-    evfilt_user_knote_disable,     
+    evfilt_user_knote_disable,
 };
