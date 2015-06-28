@@ -33,7 +33,7 @@ knote_init(void)
 static int
 knote_cmp(struct knote *a, struct knote *b)
 {
-    return memcmp(&a->kev.ident, &b->kev.ident, sizeof(a->kev.ident)); 
+    return memcmp(&a->kev.ident, &b->kev.ident, sizeof(a->kev.ident));
 }
 
 RB_GENERATE(knt, knote, kn_entries, knote_cmp)
@@ -41,10 +41,10 @@ RB_GENERATE(knt, knote, kn_entries, knote_cmp)
 struct knote *
 knote_new(void)
 {
-	struct knote *res;
+    struct knote *res;
 
     res = calloc(1, sizeof(struct knote));
-	if (res == NULL)
+    if (res == NULL)
         return (NULL);
 
     res->kn_ref = 1;
@@ -57,7 +57,7 @@ knote_release(struct knote *kn)
 {
     assert (kn->kn_ref > 0);
 
-	if (atomic_dec(&kn->kn_ref) == 0) {
+    if (atomic_dec(&kn->kn_ref) == 0) {
         if (kn->kn_flags & KNFL_KNOTE_DELETED) {
             dbg_printf("freeing knote at %p", kn);
             free(kn);
@@ -125,7 +125,7 @@ knote_lookup(struct filter *filt, uintptr_t ident)
 
     return (ent);
 }
-    
+
 
 int
 knote_disable(struct filter *filt, struct knote *kn)

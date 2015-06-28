@@ -46,7 +46,7 @@ evfilt_socket_copyout(struct kevent *dst, struct knote *src, void *ptr)
 #endif
     if (ev->events & EPOLLERR)
         dst->fflags = 1; /* FIXME: Return the actual socket error */
-          
+
     /* On return, data contains the the amount of space remaining in the write buffer */
     if (ioctl(dst->ident, SIOCOUTQ, &dst->data) < 0) {
             /* race condition with socket close, so ignore this error */
@@ -84,7 +84,7 @@ evfilt_socket_knote_create(struct filter *filt, struct knote *kn)
 }
 
 int
-evfilt_socket_knote_modify(struct filter *filt, struct knote *kn, 
+evfilt_socket_knote_modify(struct filter *filt, struct knote *kn,
         const struct kevent *kev)
 {
     (void) filt;
@@ -129,5 +129,5 @@ const struct filter evfilt_write = {
     evfilt_socket_knote_modify,
     evfilt_socket_knote_delete,
     evfilt_socket_knote_enable,
-    evfilt_socket_knote_disable,         
+    evfilt_socket_knote_disable,
 };

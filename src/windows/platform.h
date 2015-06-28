@@ -33,7 +33,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
- 
+
 #define _CRT_SECURE_NO_WARNINGS 1
 /* The #define doesn't seem to work, but the #pragma does.. */
 #ifdef _MSC_VER
@@ -44,7 +44,7 @@
 
 
 /*
- * Atomic integer operations 
+ * Atomic integer operations
  */
 #define atomic_inc   InterlockedIncrement
 #define atomic_dec   InterlockedDecrement
@@ -55,9 +55,9 @@
  * Additional members of struct kqueue
  */
 #define KQUEUE_PLATFORM_SPECIFIC \
-	HANDLE kq_iocp; \
-	HANDLE kq_synthetic_event; \
-	struct filter *kq_filt_ref[EVFILT_SYSCOUNT]; \
+    HANDLE kq_iocp; \
+    HANDLE kq_synthetic_event; \
+    struct filter *kq_filt_ref[EVFILT_SYSCOUNT]; \
     size_t kq_filt_count
 
 /*
@@ -65,14 +65,14 @@
  */
 /*
 #define FILTER_PLATFORM_SPECIFIC \
-	HANDLE kf_event_handle
+    HANDLE kf_event_handle
 */
 
 /*
  * Additional members for struct knote
  */
 #define KNOTE_PLATFORM_SPECIFIC \
-	HANDLE kn_event_whandle
+    HANDLE kn_event_whandle
 
 /*
  * Some datatype forward declarations
@@ -105,7 +105,7 @@ int     windows_get_descriptor_type(struct knote *);
 
 /* Function visibility macros */
 #define VISIBLE __declspec(dllexport)
-#define HIDDEN  
+#define HIDDEN
 
 #if !defined(__func__) && !defined(__GNUC__)
 #define __func__ __FUNCDNAME__

@@ -39,7 +39,7 @@ filter_register(struct kqueue *kq, short filter, const struct filter *src)
     int rv = 0;
 
     filt = (-1 * filter) - 1;
-    if (filt >= EVFILT_SYSCOUNT) 
+    if (filt >= EVFILT_SYSCOUNT)
         return (-1);
 
     dst = &kq->kq_filt[filt];
@@ -70,10 +70,10 @@ filter_register(struct kqueue *kq, short filter, const struct filter *src)
     }
 
 
-	/* FIXME: should totally remove const from src */
-	if (kqops.filter_init != NULL
+    /* FIXME: should totally remove const from src */
+    if (kqops.filter_init != NULL
             && kqops.filter_init(kq, dst) < 0)
-		return (-1);
+        return (-1);
 
     return (0);
 }
@@ -111,7 +111,7 @@ filter_unregister_all(struct kqueue *kq)
         if (kq->kq_filt[i].kf_id == 0)
             continue;
 
-        if (kq->kq_filt[i].kf_destroy != NULL) 
+        if (kq->kq_filt[i].kf_destroy != NULL)
             kq->kq_filt[i].kf_destroy(&kq->kq_filt[i]);
 
         //XXX-FIXME
@@ -119,7 +119,7 @@ filter_unregister_all(struct kqueue *kq)
 
         if (kqops.filter_free != NULL)
             kqops.filter_free(kq, &kq->kq_filt[i]);
-	}
+    }
     memset(&kq->kq_filt[0], 0, sizeof(kq->kq_filt));
 }
 
@@ -150,14 +150,14 @@ filter_name(short filt)
     const char *fname[EVFILT_SYSCOUNT] = {
         "EVFILT_READ",
         "EVFILT_WRITE",
-        "EVFILT_AIO", 
+        "EVFILT_AIO",
         "EVFILT_VNODE",
         "EVFILT_PROC",
-        "EVFILT_SIGNAL", 
-        "EVFILT_TIMER", 
-        "EVFILT_NETDEV", 
-        "EVFILT_FS",    
-        "EVFILT_LIO",  
+        "EVFILT_SIGNAL",
+        "EVFILT_TIMER",
+        "EVFILT_NETDEV",
+        "EVFILT_FS",
+        "EVFILT_LIO",
         "EVFILT_USER"
     };
 
