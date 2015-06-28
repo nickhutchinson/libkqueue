@@ -262,15 +262,6 @@ evfilt_timer_copyout(struct kevent *dst, struct knote *src, void *ptr UNUSED)
 
     dst->data = si.counter;
 
-#if DEADWOOD
-    if (kn->kev.flags & EV_DISPATCH) {
-        KNOTE_DISABLE(kn);
-        _timer_delete(kn);
-    } else if (kn->kev.flags & EV_ONESHOT) {
-        _timer_delete(kn);
-        knote_free(filt, kn);
-    } 
-#endif
 
     return (1);
 }

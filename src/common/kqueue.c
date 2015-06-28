@@ -98,24 +98,6 @@ libkqueue_init(void)
 #endif
 }
 
-#if DEADWOOD
-static int
-kqueue_cmp(struct kqueue *a, struct kqueue *b)
-{
-    return memcmp(&a->kq_id, &b->kq_id, sizeof(int)); 
-}
-
-/* Must hold the kqtree_mtx when calling this */
-void
-kqueue_free(struct kqueue *kq)
-{
-    RB_REMOVE(kqt, &kqtree, kq);
-    filter_unregister_all(kq);
-    kqops.kqueue_free(kq);
-    free(kq);
-}
-
-#endif
 
 struct kqueue *
 kqueue_lookup(int kq)

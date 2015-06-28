@@ -200,15 +200,6 @@ evfilt_signal_copyout(struct kevent *dst, struct knote *src, void *ptr UNUSED)
     dst->fflags = 0;
     dst->data = 1;  
 
-#if DEADWOOD
-    if (kn->kev.flags & EV_DISPATCH) {
-        ignore_signal(kn->kev.ident);
-        KNOTE_DISABLE(kn);
-    } else if (kn->kev.flags & EV_ONESHOT) {
-        ignore_signal(kn->kev.ident);
-        knote_free(filt, kn);
-    }
-#endif
 
     return (1);
 }

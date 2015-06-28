@@ -53,22 +53,6 @@ windows_kqueue_init(struct kqueue *kq)
         return (-1);
     }
 
-#if DEADWOOD
-    /* Create a handle whose sole purpose is to indicate a synthetic
-     * IO event. */
-    kq->kq_synthetic_event = CreateSemaphore(NULL, 0, 1, NULL);
-    if (kq->kq_synthetic_event == NULL) {
-        /* FIXME: close kq_iocp */
-        dbg_lasterror("CreateSemaphore");
-        return (-1);
-    }
-
-    kq->kq_loop = evt_create();
-    if (kq->kq_loop == NULL) {
-        dbg_perror("evt_create()");
-        return (-1);
-    }
-#endif
 
 	if(filter_register_all(kq) < 0) {
 		CloseHandle(kq->kq_iocp);

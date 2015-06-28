@@ -75,9 +75,6 @@ static VOID CALLBACK evfilt_timer_callback(void* param, BOOLEAN fired){
 			return;
 			/* FIXME: need more extreme action */
 		}
-#if DEADWOOD
-		evt_signal(kq->kq_loop, EVT_WAKEUP, kn);
-#endif
 	}
 	if(kn->kev.flags & EV_ONESHOT) {
 		struct filter* filt;
