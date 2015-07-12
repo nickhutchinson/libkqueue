@@ -13,11 +13,18 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
+cmake_minimum_required(VERSION 2.8.12)
 
-cmake_minimum_required(VERSION 2.8.7)
 include(CheckIncludeFile)
+include(CheckLanguage)
 
 project(kqueue C)
+
+check_language(CXX)
+if(CMAKE_CXX_COMPILER)
+    enable_language(CXX)
+endif ()
+
 set(KQUEUE_VERSION 2.0.4)
 set(KQUEUE_ABI_VERSION 0)
 
@@ -86,13 +93,13 @@ else()
     include_directories(
         src/common
     )
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
     add_definitions(
         -Wall -Wextra
         -Wno-missing-field-initializers
         -fPIC
         -D_XOPEN_SOURCE=600
         -D_GNU_SOURCE
-        -std=c99
         -fvisibility=hidden
     )
 endif()
@@ -121,8 +128,11 @@ foreach(target kqueue_shared kqueue_static)
 endforeach ()
 
 #tests
-option(KQUEUE_TESTS "Enable to build tests for libkqueue" OFF)
-if(KQUEUE_TESTS)
+option(KQUEUE_ENABLE_TEST_SUITE "Enable to build tests for libkqueue" OFF)
+if(KQUEUE_ENABLE_TEST_SUITE AND NOT CMAKE_CXX_COMPILER)
+    message(WARNING
+            "No C++ compiler is available; unable to build test suite")
+elseif(KQUEUE_ENABLE_TEST_SUITE)
     message("-- Adding tests for libkqueue")
     add_subdirectory(test)
 endif()

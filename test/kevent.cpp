@@ -77,7 +77,7 @@ kevent_fflags_dump(struct kevent *kev)
     if (kev->fflags & attrib) \
     strncat(buf, #attrib" ", 64);
 
-    if ((buf = calloc(1, 1024)) == NULL)
+    if ((buf = (char*)calloc(1, 1024)) == NULL)
     abort();
 
     /* Not every filter has meaningful fflags */
@@ -113,7 +113,7 @@ kevent_flags_dump(struct kevent *kev)
     if (kev->flags & attrib) \
     strncat(buf, #attrib" ", 64);
 
-    if ((buf = calloc(1, 1024)) == NULL)
+    if ((buf = (char*)calloc(1, 1024)) == NULL)
     abort();
 
     snprintf(buf, 1024, "flags = %d (", kev->flags);
