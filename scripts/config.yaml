@@ -1,0 +1,19 @@
+---
+declarations:
+  - EPOLLRDHUP
+  - PORT_SOURCE_FILE
+
+functions:
+  - ppoll
+
+headers:
+  - err.h
+  - sys/eventfd.h
+  - sys/signalfd.h
+  - sys/timerfd.h
+
+
+custom: []
+
+prologue:
+epilogue:

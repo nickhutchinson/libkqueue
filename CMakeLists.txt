@@ -15,8 +15,10 @@
 #
 cmake_minimum_required(VERSION 2.8.12)
 
+include(CheckFunctionExists)
 include(CheckIncludeFile)
 include(CheckLanguage)
+include(CheckSymbolExists)
 
 project(kqueue C)
 
@@ -32,16 +34,13 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE MinSizeRel)
 endif ()
 
-check_include_file(inttypes.h HAVE_INTTYPES_H)
-check_include_file(memory.h HAVE_MEMORY_H)
-check_include_file(stdint.h HAVE_STDINT_H)
-check_include_file(stdlib.h HAVE_STDLIB_H)
-check_include_file(strings.h HAVE_STRINGS_H)
-check_include_file(string.h HAVE_STRING_H)
-check_include_file(sys/epoll.h HAVE_SYS_EPOLL_H)
-check_include_file(sys/stat.h HAVE_SYS_STAT_H)
-check_include_file(sys/types.h HAVE_SYS_TYPES_H)
-check_include_file(unistd.h HAVE_UNISTD_H)
+check_symbol_exists(EPOLLRDHUP sys/epoll.h HAVE_DECL_EPOLLRDHUP)
+check_symbol_exists(PORT_SOURCE_FILE sys/port.h HAVE_DECL_PORT_SOURCE_FILE)
+check_function_exists(ppoll HAVE_PPOLL)
+check_include_file(err.h HAVE_ERR_H)
+check_include_file(sys/eventfd.h HAVE_SYS_EVENTFD_H)
+check_include_file(sys/signalfd.h HAVE_SYS_SIGNALFD_H)
+check_include_file(sys/timerfd.h HAVE_SYS_TIMERFD_H)
 
 configure_file(config.h.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/config.h")
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")

@@ -1,30 +1,31 @@
-/* Define to 1 if you have the <inttypes.h> header file. */
-#cmakedefine01 HAVE_INTTYPES_H
 
-/* Define to 1 if you have the <memory.h> header file. */
-#cmakedefine01 HAVE_MEMORY_H
+/* Define to 1 if you have the <err.h> header file. */
+#cmakedefine01 HAVE_ERR_H
 
-/* Define to 1 if you have the <stdint.h> header file. */
-#cmakedefine01 HAVE_STDINT_H
+/* Define to 1 if you have the <sys/eventfd.h> header file. */
+#cmakedefine01 HAVE_SYS_EVENTFD_H
 
-/* Define to 1 if you have the <stdlib.h> header file. */
-#cmakedefine01 HAVE_STDLIB_H
+/* Define to 1 if you have the <sys/signalfd.h> header file. */
+#cmakedefine01 HAVE_SYS_SIGNALFD_H
 
-/* Define to 1 if you have the <strings.h> header file. */
-#cmakedefine01 HAVE_STRINGS_H
+/* Define to 1 if you have the <sys/timerfd.h> header file. */
+#cmakedefine01 HAVE_SYS_TIMERFD_H
 
-/* Define to 1 if you have the <string.h> header file. */
-#cmakedefine01 HAVE_STRING_H
+/* Define to 1 if you have the declaration of `EPOLLRDHUP', and to 0 if you
+   don't. */
+#cmakedefine01 HAVE_DECL_EPOLLRDHUP
 
-/* Define to 1 if you have the <sys/epoll.h */
-#cmakedefine01 HAVE_SYS_EPOLL_H
+/* Define to 1 if you have the declaration of `NOTE_REVOKE', and to 0 if you
+   don't. */
+#cmakedefine01 HAVE_DECL_NOTE_REVOKE
 
-/* Define to 1 if you have the <sys/stat.h> header file. */
-#cmakedefine01 HAVE_SYS_STAT_H
+/* Define to 1 if you have the declaration of `NOTE_TRUNCATE', and to 0 if you
+   don't. */
+#cmakedefine01 HAVE_DECL_NOTE_TRUNCATE
 
-/* Define to 1 if you have the <sys/types.h> header file. */
-#cmakedefine01 HAVE_SYS_TYPES_H
+/* Define to 1 if you have the declaration of `PORT_SOURCE_FILE', and to 0 if
+   you don't. */
+#cmakedefine01 HAVE_DECL_PORT_SOURCE_FILE
 
-/* Define to 1 if you have the <unistd.h> header file. */
-#cmakedefine01 HAVE_UNISTD_H
-
+/* Define to 1 if you have the `ppoll' function. */
+#cmakedefine01 HAVE_PPOLL
