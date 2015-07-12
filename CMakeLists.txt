@@ -25,19 +25,9 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE MinSizeRel)
 endif ()
 
-check_include_file(inttypes.h HAVE_INTTYPES_H)
-check_include_file(memory.h HAVE_MEMORY_H)
-check_include_file(stdint.h HAVE_STDINT_H)
-check_include_file(stdlib.h HAVE_STDLIB_H)
-check_include_file(strings.h HAVE_STRINGS_H)
-check_include_file(string.h HAVE_STRING_H)
-check_include_file(sys/epoll.h HAVE_SYS_EPOLL_H)
-check_include_file(sys/stat.h HAVE_SYS_STAT_H)
-check_include_file(sys/types.h HAVE_SYS_TYPES_H)
-check_include_file(unistd.h HAVE_UNISTD_H)
+include(config/config.cmake)
+configure_file(config/config.h.in "${CMAKE_CURRENT_BINARY_DIR}/config/config.h")
 
-configure_file(config.h.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/config.h")
-include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
 #files
 file(GLOB_RECURSE INCL include/*.h)
@@ -100,6 +90,7 @@ source_group(src FILES ${SRC})
 
 #includes
 include_directories( include )
+include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
 #library (static or shared)
 add_library(kqueue_shared STATIC ${SRC} ${INCL})
