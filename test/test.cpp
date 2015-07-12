@@ -30,15 +30,7 @@ static int error_flag = 1;
 static void
 error_handler(int signum)
 {
-#if defined(__linux__) && !defined(__ANDROID__)
-    void *buf[32];
-
-    /* FIXME: the symbols aren't printing */
     printf("***** ERROR: Program received signal %d *****\n", signum);
-    backtrace_symbols_fd(buf, sizeof(buf) / sizeof(void *), 2);
-#else
-    printf("***** ERROR: Program received signal %d *****\n", signum);
-#endif
     exit(1);
 }
 #endif /* ! _WIN32 */
