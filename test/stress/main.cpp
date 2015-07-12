@@ -40,7 +40,8 @@ test_kqueue_conc(void)
     for (i = 0; i < 256; i++) {
         fd = kqueue();
         if (i < 0)
-            err(1, "kqueue");
+            FAIL() << "kqueue"
+                   << " - errno: " << errno;
         close(fd);
     }
 }
@@ -54,7 +55,8 @@ test_harness(void *arg)
 
     kqfd = kqueue();
     if (kqfd < 0)
-        err(1, "kqueue");
+        FAIL() << "kqueue"
+               << " - errno: " << errno;
 
     printf("thread %d runs %d\n", id, id % 4);
 
@@ -83,11 +85,13 @@ main(int argc, char **argv)
 
     for (i=0; i<nthreads; i++) {
         if (pthread_create(&tid[i], NULL, test_harness, (void *)i) != 0)
-            err(1, "pthread_create");
+            FAIL() << "pthread_create"
+                   << " - errno: " << errno;
     }
     for (i=0; i<nthreads; i++) {
         if (pthread_join(tid[i], NULL) != 0)
-            err(1, "pthread_join");
+            FAIL() << "pthread_join"
+                   << " - errno: " << errno;
     }
     printf("\n---\n+OK All tests completed.\n");
     exit (0);

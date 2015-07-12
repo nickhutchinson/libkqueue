@@ -31,9 +31,11 @@ test_kevent_proc_add(struct test_context *ctx)
 {
     struct kevent kev;
 
-    test_no_kevents(kqfd);
-    kevent_add(kqfd, &kev, pid, EVFILT_PROC, EV_ADD, 0, 0, NULL);
-    test_no_kevents(kqfd);
+    EXPECT_NO_EVENT(kqfd);
+    kev = KEventCreate(pid, EVFILT_PROC, EV_ADD);
+    EXPECT_EQ(0, kevent(kqfd, &kev, 1, NULL, 0, NULL)) << strerror(errno)
+                                                       << " - " << kev;
+    EXPECT_NO_EVENT(kqfd);
 }
 
 static void
@@ -41,12 +43,14 @@ test_kevent_proc_delete(struct test_context *ctx)
 {
     struct kevent kev;
 
-    test_no_kevents(kqfd);
-    kevent_add(kqfd, &kev, pid, EVFILT_PROC, EV_DELETE, 0, 0, NULL);
+    EXPECT_NO_EVENT(kqfd);
+    kev = KEventCreate(pid, EVFILT_PROC, EV_DELETE);
+    EXPECT_EQ(0, kevent(kqfd, &kev, 1, NULL, 0, NULL)) << strerror(errno)
+                                                       << " - " << kev;
     if (kill(pid, SIGKILL) < 0)
-        die("kill");
+        FAIL() << "kill";
     sleep(1);
-    test_no_kevents(kqfd);
+    EXPECT_NO_EVENT(kqfd);
 }
 
 static void
@@ -63,16 +67,18 @@ test_kevent_proc_get(struct test_context *ctx)
     }
     printf(" -- child created (pid %d)\n", (int) pid);
 
-    test_no_kevents(kqfd);
-    kevent_add(kqfd, &kev, pid, EVFILT_PROC, EV_ADD, 0, 0, NULL);
+    EXPECT_NO_EVENT(kqfd);
+    kev = KEventCreate(pid, EVFILT_PROC, EV_ADD);
+    EXPECT_EQ(0, kevent(kqfd, &kev, 1, NULL, 0, NULL)) << strerror(errno)
+                                                       << " - " << kev;
 
     /* Cause the child to exit, then retrieve the event */
     printf(" -- killing process %d\n", (int) pid);
     if (kill(pid, SIGUSR1) < 0)
-        die("kill");
-    kevent_get(&buf, kqfd);
-    kevent_cmp(&kev, &buf);
-    test_no_kevents(kqfd);
+        FAIL() << "kill";
+    EXPECT_EVENT(kqfd, &buf);
+    EXPECT_EQ(kev, buf);
+    EXPECT_NO_EVENT(kqfd);
 }
 
 #ifdef TODO
@@ -81,8 +87,6 @@ test_kevent_signal_disable(struct test_context *ctx)
 {
     const char *test_id = "kevent(EVFILT_SIGNAL, EV_DISABLE)";
     struct kevent kev;
-
-    test_begin(test_id);
 
     EV_SET(&kev, SIGUSR1, EVFILT_SIGNAL, EV_DISABLE, 0, 0, NULL);
     if (kevent(kqfd, &kev, 1, NULL, 0, NULL) < 0)
@@ -93,11 +97,11 @@ test_kevent_signal_disable(struct test_context *ctx)
     sigemptyset(&mask);
     sigaddset(&mask, SIGUSR1);
     if (sigprocmask(SIG_BLOCK, &mask, NULL) == -1)
-        die("sigprocmask");
+        FAIL() << "sigprocmask";
     if (kill(getpid(), SIGKILL) < 0)
-        die("kill");
+        FAIL() << "kill";
 
-    test_no_kevents();
+    EXPECT_NO_EVENT();
 
     success();
 }
@@ -108,8 +112,6 @@ test_kevent_signal_enable(struct test_context *ctx)
     const char *test_id = "kevent(EVFILT_SIGNAL, EV_ENABLE)";
     struct kevent kev;
 
-    test_begin(test_id);
-
     EV_SET(&kev, SIGUSR1, EVFILT_SIGNAL, EV_ENABLE, 0, 0, NULL);
     if (kevent(kqfd, &kev, 1, NULL, 0, NULL) < 0)
         die("%s", test_id);
@@ -119,9 +121,9 @@ test_kevent_signal_enable(struct test_context *ctx)
     sigemptyset(&mask);
     sigaddset(&mask, SIGUSR1);
     if (sigprocmask(SIG_BLOCK, &mask, NULL) == -1)
-        die("sigprocmask");
+        FAIL() << "sigprocmask";
     if (kill(getpid(), SIGUSR1) < 0)
-        die("kill");
+        FAIL() << "kill";
 
     kev.flags = EV_ADD | EV_CLEAR;
 #if LIBKQUEUE
@@ -145,8 +147,6 @@ test_kevent_signal_del(struct test_context *ctx)
     const char *test_id = "kevent(EVFILT_SIGNAL, EV_DELETE)";
     struct kevent kev;
 
-    test_begin(test_id);
-
     /* Delete the kevent */
     EV_SET(&kev, SIGUSR1, EVFILT_SIGNAL, EV_DELETE, 0, 0, NULL);
     if (kevent(kqfd, &kev, 1, NULL, 0, NULL) < 0)
@@ -157,11 +157,11 @@ test_kevent_signal_del(struct test_context *ctx)
     sigemptyset(&mask);
     sigaddset(&mask, SIGUSR1);
     if (sigprocmask(SIG_BLOCK, &mask, NULL) == -1)
-        die("sigprocmask");
+        FAIL() << "sigprocmask";
     if (kill(getpid(), SIGUSR1) < 0)
-        die("kill");
+        FAIL() << "kill";
 
-    test_no_kevents();
+    EXPECT_NO_EVENT();
     success();
 }
 
@@ -170,8 +170,6 @@ test_kevent_signal_oneshot(struct test_context *ctx)
 {
     const char *test_id = "kevent(EVFILT_SIGNAL, EV_ONESHOT)";
     struct kevent kev;
-
-    test_begin(test_id);
 
     EV_SET(&kev, SIGUSR1, EVFILT_SIGNAL, EV_ADD | EV_ONESHOT, 0, 0, NULL);
     if (kevent(kqfd, &kev, 1, NULL, 0, NULL) < 0)
@@ -182,9 +180,9 @@ test_kevent_signal_oneshot(struct test_context *ctx)
     sigemptyset(&mask);
     sigaddset(&mask, SIGUSR1);
     if (sigprocmask(SIG_BLOCK, &mask, NULL) == -1)
-        die("sigprocmask");
+        FAIL() << "sigprocmask";
     if (kill(getpid(), SIGUSR1) < 0)
-        die("kill");
+        FAIL() << "kill";
 
     kev.flags |= EV_CLEAR;
     kev.data = 1;
@@ -192,8 +190,8 @@ test_kevent_signal_oneshot(struct test_context *ctx)
 
     /* Send another one and make sure we get no events */
     if (kill(getpid(), SIGUSR1) < 0)
-        die("kill");
-    test_no_kevents();
+        FAIL() << "kill";
+    EXPECT_NO_EVENT();
 
     success();
 }

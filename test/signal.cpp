@@ -21,7 +21,9 @@ test_kevent_signal_add(struct test_context *ctx)
 {
     struct kevent kev;
 
-    kevent_add(ctx->kqfd, &kev, SIGUSR1, EVFILT_SIGNAL, EV_ADD, 0, 0, NULL);
+    kev = KEventCreate(SIGUSR1, EVFILT_SIGNAL, EV_ADD);
+    EXPECT_EQ(0, kevent(ctx->kqfd, &kev, 1, NULL, 0, NULL)) << strerror(errno)
+                                                            << " - " << kev;
 }
 
 void
@@ -29,15 +31,17 @@ test_kevent_signal_get(struct test_context *ctx)
 {
     struct kevent kev, ret;
 
-    kevent_add(ctx->kqfd, &kev, SIGUSR1, EVFILT_SIGNAL, EV_ADD, 0, 0, NULL);
+    kev = KEventCreate(SIGUSR1, EVFILT_SIGNAL, EV_ADD);
+    EXPECT_EQ(0, kevent(ctx->kqfd, &kev, 1, NULL, 0, NULL)) << strerror(errno)
+                                                            << " - " << kev;
 
     if (kill(getpid(), SIGUSR1) < 0)
-        die("kill");
+        FAIL() << "kill";
 
     kev.flags |= EV_CLEAR;
     kev.data = 1;
-    kevent_get(&ret, ctx->kqfd);
-    kevent_cmp(&kev, &ret);
+    EXPECT_EVENT(ctx->kqfd, &ret);
+    EXPECT_EQ(kev, ret);
 }
 
 void
@@ -45,12 +49,14 @@ test_kevent_signal_disable(struct test_context *ctx)
 {
     struct kevent kev;
 
-    kevent_add(ctx->kqfd, &kev, SIGUSR1, EVFILT_SIGNAL, EV_DISABLE, 0, 0, NULL);
+    kev = KEventCreate(SIGUSR1, EVFILT_SIGNAL, EV_DISABLE);
+    EXPECT_EQ(0, kevent(ctx->kqfd, &kev, 1, NULL, 0, NULL)) << strerror(errno)
+                                                            << " - " << kev;
 
     if (kill(getpid(), SIGUSR1) < 0)
-        die("kill");
+        FAIL() << "kill";
 
-    test_no_kevents(ctx->kqfd);
+    EXPECT_NO_EVENT(ctx->kqfd);
 }
 
 void
@@ -58,10 +64,12 @@ test_kevent_signal_enable(struct test_context *ctx)
 {
     struct kevent kev, ret;
 
-    kevent_add(ctx->kqfd, &kev, SIGUSR1, EVFILT_SIGNAL, EV_ENABLE, 0, 0, NULL);
+    kev = KEventCreate(SIGUSR1, EVFILT_SIGNAL, EV_ENABLE);
+    EXPECT_EQ(0, kevent(ctx->kqfd, &kev, 1, NULL, 0, NULL)) << strerror(errno)
+                                                            << " - " << kev;
 
     if (kill(getpid(), SIGUSR1) < 0)
-        die("kill");
+        FAIL() << "kill";
 
     kev.flags = EV_ADD | EV_CLEAR;
 #if LIBKQUEUE
@@ -69,13 +77,13 @@ test_kevent_signal_enable(struct test_context *ctx)
 #else
     kev.data = 2; // one extra time from test_kevent_signal_disable()
 #endif
-    kevent_get(&ret, ctx->kqfd);
-    kevent_cmp(&kev, &ret);
+    EXPECT_EVENT(ctx->kqfd, &ret);
+    EXPECT_EQ(kev, ret);
 
     /* Delete the watch */
     kev.flags = EV_DELETE;
     if (kevent(ctx->kqfd, &kev, 1, NULL, 0, NULL) < 0)
-        die("kevent");
+        FAIL() << "kevent";
 }
 
 void
@@ -84,13 +92,15 @@ test_kevent_signal_del(struct test_context *ctx)
     struct kevent kev;
 
     /* Delete the kevent */
-    kevent_add(ctx->kqfd, &kev, SIGUSR1, EVFILT_SIGNAL, EV_DELETE, 0, 0, NULL);
+    kev = KEventCreate(SIGUSR1, EVFILT_SIGNAL, EV_DELETE);
+    EXPECT_EQ(0, kevent(ctx->kqfd, &kev, 1, NULL, 0, NULL)) << strerror(errno)
+                                                            << " - " << kev;
 
     signal(SIGUSR1, SIG_IGN);
     if (kill(getpid(), SIGUSR1) < 0)
-        die("kill");
+        FAIL() << "kill";
 
-    test_no_kevents(ctx->kqfd);
+    EXPECT_NO_EVENT(ctx->kqfd);
 }
 
 void
@@ -98,21 +108,23 @@ test_kevent_signal_oneshot(struct test_context *ctx)
 {
     struct kevent kev, ret;
 
-    kevent_add(ctx->kqfd, &kev, SIGUSR1, EVFILT_SIGNAL, EV_ADD | EV_ONESHOT, 0, 0, NULL);
+    kev = KEventCreate(SIGUSR1, EVFILT_SIGNAL, EV_ADD | EV_ONESHOT);
+    EXPECT_EQ(0, kevent(ctx->kqfd, &kev, 1, NULL, 0, NULL)) << strerror(errno)
+                                                            << " - " << kev;
 
     if (kill(getpid(), SIGUSR1) < 0)
-        die("kill");
+        FAIL() << "kill";
 
     kev.flags |= EV_CLEAR;
     kev.data = 1;
-    kevent_get(&ret, ctx->kqfd);
-    kevent_cmp(&kev, &ret);
+    EXPECT_EVENT(ctx->kqfd, &ret);
+    EXPECT_EQ(kev, ret);
 
     /* Send another one and make sure we get no events */
-    test_no_kevents(ctx->kqfd);
+    EXPECT_NO_EVENT(ctx->kqfd);
     if (kill(getpid(), SIGUSR1) < 0)
-        die("kill");
-    test_no_kevents(ctx->kqfd);
+        FAIL() << "kill";
+    EXPECT_NO_EVENT(ctx->kqfd);
 }
 
 void
@@ -120,16 +132,20 @@ test_kevent_signal_modify(struct test_context *ctx)
 {
     struct kevent kev, ret;
 
-    kevent_add(ctx->kqfd, &kev, SIGUSR1, EVFILT_SIGNAL, EV_ADD, 0, 0, NULL);
-    kevent_add(ctx->kqfd, &kev, SIGUSR1, EVFILT_SIGNAL, EV_ADD, 0, 0, ((void *)-1));
+    kev = KEventCreate(SIGUSR1, EVFILT_SIGNAL, EV_ADD);
+    EXPECT_EQ(0, kevent(ctx->kqfd, &kev, 1, NULL, 0, NULL)) << strerror(errno)
+                                                            << " - " << kev;
+    kev = KEventCreate(SIGUSR1, EVFILT_SIGNAL, EV_ADD);
+    EXPECT_EQ(0, kevent(ctx->kqfd, &kev, 1, NULL, 0, NULL)) << strerror(errno)
+                                                            << " - " << kev;
 
     if (kill(getpid(), SIGUSR1) < 0)
-        die("kill");
+        FAIL() << "kill";
 
     kev.flags |= EV_CLEAR;
     kev.data = 1;
-    kevent_get(&ret, ctx->kqfd);
-    kevent_cmp(&kev, &ret);
+    EXPECT_EVENT(ctx->kqfd, &ret);
+    EXPECT_EQ(kev, ret);
 
     test_kevent_signal_del(ctx);
 }
@@ -140,39 +156,45 @@ test_kevent_signal_dispatch(struct test_context *ctx)
 {
     struct kevent kev, ret;
 
-    test_no_kevents(ctx->kqfd);
+    EXPECT_NO_EVENT(ctx->kqfd);
 
-    kevent_add(ctx->kqfd, &kev, SIGUSR1, EVFILT_SIGNAL, EV_ADD | EV_CLEAR | EV_DISPATCH, 0, 0, NULL);
+    kev = KEventCreate(SIGUSR1, EVFILT_SIGNAL, EV_ADD | EV_CLEAR | EV_DISPATCH);
+    EXPECT_EQ(0, kevent(ctx->kqfd, &kev, 1, NULL, 0, NULL)) << strerror(errno)
+                                                            << " - " << kev;
 
     /* Get one event */
     if (kill(getpid(), SIGUSR1) < 0)
-        die("kill");
+        FAIL() << "kill";
     kev.data = 1;
-    kevent_get(&ret, ctx->kqfd);
-    kevent_cmp(&kev, &ret);
+    EXPECT_EVENT(ctx->kqfd, &ret);
+    EXPECT_EQ(kev, ret);
 
     /* Confirm that the knote is disabled */
     if (kill(getpid(), SIGUSR1) < 0)
-        die("kill");
-    test_no_kevents(ctx->kqfd);
+        FAIL() << "kill";
+    EXPECT_NO_EVENT(ctx->kqfd);
 
     /* Enable the knote and make sure no events are pending */
-    kevent_add(ctx->kqfd, &kev, SIGUSR1, EVFILT_SIGNAL, EV_ENABLE | EV_DISPATCH, 0, 0, NULL);
-    test_no_kevents(ctx->kqfd);
+    kev = KEventCreate(SIGUSR1, EVFILT_SIGNAL, EV_ENABLE | EV_DISPATCH);
+    EXPECT_EQ(0, kevent(ctx->kqfd, &kev, 1, NULL, 0, NULL)) << strerror(errno)
+                                                            << " - " << kev;
+    EXPECT_NO_EVENT(ctx->kqfd);
 
     /* Get the next event */
     if (kill(getpid(), SIGUSR1) < 0)
-        die("kill");
+        FAIL() << "kill";
     kev.flags = EV_ADD | EV_CLEAR | EV_DISPATCH;
     kev.data = 1;
-    kevent_get(&ret, ctx->kqfd);
-    kevent_cmp(&kev, &ret);
+    EXPECT_EVENT(ctx->kqfd, &ret);
+    EXPECT_EQ(kev, ret);
 
     /* Remove the knote and ensure the event no longer fires */
-    kevent_add(ctx->kqfd, &kev, SIGUSR1, EVFILT_SIGNAL, EV_DELETE, 0, 0, NULL);
+    kev = KEventCreate(SIGUSR1, EVFILT_SIGNAL, EV_DELETE);
+    EXPECT_EQ(0, kevent(ctx->kqfd, &kev, 1, NULL, 0, NULL)) << strerror(errno)
+                                                            << " - " << kev;
     if (kill(getpid(), SIGUSR1) < 0)
-        die("kill");
-    test_no_kevents(ctx->kqfd);
+        FAIL() << "kill";
+    EXPECT_NO_EVENT(ctx->kqfd);
 }
 #endif  /* EV_DISPATCH */
 

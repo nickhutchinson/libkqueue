@@ -21,7 +21,9 @@ test_kevent_timer_add(struct test_context *ctx)
 {
     struct kevent kev;
 
-    kevent_add(ctx->kqfd, &kev, 1, EVFILT_TIMER, EV_ADD, 0, 1000, NULL);
+    kev = KEventCreate(1, EVFILT_TIMER, EV_ADD, 0, 1000);
+    EXPECT_EQ(0, kevent(ctx->kqfd, &kev, 1, NULL, 0, NULL)) << strerror(errno)
+                                                            << " - " << kev;
 }
 
 void
@@ -29,9 +31,11 @@ test_kevent_timer_del(struct test_context *ctx)
 {
     struct kevent kev;
 
-    kevent_add(ctx->kqfd, &kev, 1, EVFILT_TIMER, EV_DELETE, 0, 0, NULL);
+    kev = KEventCreate(1, EVFILT_TIMER, EV_DELETE);
+    EXPECT_EQ(0, kevent(ctx->kqfd, &kev, 1, NULL, 0, NULL)) << strerror(errno)
+                                                            << " - " << kev;
 
-    test_no_kevents(ctx->kqfd);
+    EXPECT_NO_EVENT(ctx->kqfd);
 }
 
 void
@@ -39,14 +43,18 @@ test_kevent_timer_get(struct test_context *ctx)
 {
     struct kevent kev, ret;
 
-    kevent_add(ctx->kqfd, &kev, 1, EVFILT_TIMER, EV_ADD, 0, 1000, NULL);
+    kev = KEventCreate(1, EVFILT_TIMER, EV_ADD, 0, 1000);
+    EXPECT_EQ(0, kevent(ctx->kqfd, &kev, 1, NULL, 0, NULL)) << strerror(errno)
+                                                            << " - " << kev;
 
     kev.flags |= EV_CLEAR;
     kev.data = 1;
-    kevent_get(&ret, ctx->kqfd);
-    kevent_cmp(&kev, &ret);
+    EXPECT_EVENT(ctx->kqfd, &ret);
+    EXPECT_EQ(kev, ret);
 
-    kevent_add(ctx->kqfd, &kev, 1, EVFILT_TIMER, EV_DELETE, 0, 0, NULL);
+    kev = KEventCreate(1, EVFILT_TIMER, EV_DELETE);
+    EXPECT_EQ(0, kevent(ctx->kqfd, &kev, 1, NULL, 0, NULL)) << strerror(errno)
+                                                            << " - " << kev;
 }
 
 static void
@@ -54,19 +62,21 @@ test_kevent_timer_oneshot(struct test_context *ctx)
 {
     struct kevent kev, ret;
 
-    test_no_kevents(ctx->kqfd);
+    EXPECT_NO_EVENT(ctx->kqfd);
 
-    kevent_add(ctx->kqfd, &kev, 2, EVFILT_TIMER, EV_ADD | EV_ONESHOT, 0, 500,NULL);
+    kev = KEventCreate(2, EVFILT_TIMER, EV_ADD | EV_ONESHOT);
+    EXPECT_EQ(0, kevent(ctx->kqfd, &kev, 1, NULL, 0, NULL)) << strerror(errno)
+                                                            << " - " << kev;
 
     /* Retrieve the event */
     kev.flags = EV_ADD | EV_CLEAR | EV_ONESHOT;
     kev.data = 1;
-    kevent_get(&ret, ctx->kqfd);
-    kevent_cmp(&kev, &ret);
+    EXPECT_EVENT(ctx->kqfd, &ret);
+    EXPECT_EQ(kev, ret);
 
     /* Check if the event occurs again */
     sleep(3);
-    test_no_kevents(ctx->kqfd);
+    EXPECT_NO_EVENT(ctx->kqfd);
 }
 
 static void
@@ -74,24 +84,26 @@ test_kevent_timer_periodic(struct test_context *ctx)
 {
     struct kevent kev, ret;
 
-    test_no_kevents(ctx->kqfd);
+    EXPECT_NO_EVENT(ctx->kqfd);
 
-    kevent_add(ctx->kqfd, &kev, 3, EVFILT_TIMER, EV_ADD, 0, 1000,NULL);
+    kev = KEventCreate(3, EVFILT_TIMER, EV_ADD);
+    EXPECT_EQ(0, kevent(ctx->kqfd, &kev, 1, NULL, 0, NULL)) << strerror(errno)
+                                                            << " - " << kev;
 
     /* Retrieve the event */
     kev.flags = EV_ADD | EV_CLEAR;
     kev.data = 1;
-    kevent_get(&ret, ctx->kqfd);
-    kevent_cmp(&kev, &ret);
+    EXPECT_EVENT(ctx->kqfd, &ret);
+    EXPECT_EQ(kev, ret);
 
     /* Check if the event occurs again */
     sleep(1);
-    kevent_get(&ret, ctx->kqfd);
-    kevent_cmp(&kev, &ret);
+    EXPECT_EVENT(ctx->kqfd, &ret);
+    EXPECT_EQ(kev, ret);
 
     /* Delete the event */
     kev.flags = EV_DELETE;
-    kevent_update(ctx->kqfd, &kev);
+    EXPECT_EQ(0, kevent(ctx->kqfd, &kev, 1, NULL, 0, NULL)) << kev;
 }
 
 static void
@@ -99,22 +111,24 @@ test_kevent_timer_disable_and_enable(struct test_context *ctx)
 {
     struct kevent kev, ret;
 
-    test_no_kevents(ctx->kqfd);
+    EXPECT_NO_EVENT(ctx->kqfd);
 
     /* Add the watch and immediately disable it */
-    kevent_add(ctx->kqfd, &kev, 4, EVFILT_TIMER, EV_ADD | EV_ONESHOT, 0, 2000,NULL);
+    kev = KEventCreate(4, EVFILT_TIMER, EV_ADD | EV_ONESHOT);
+    EXPECT_EQ(0, kevent(ctx->kqfd, &kev, 1, NULL, 0, NULL)) << strerror(errno)
+                                                            << " - " << kev;
     kev.flags = EV_DISABLE;
-    kevent_update(ctx->kqfd, &kev);
-    test_no_kevents(ctx->kqfd);
+    EXPECT_EQ(0, kevent(ctx->kqfd, &kev, 1, NULL, 0, NULL)) << kev;
+    EXPECT_NO_EVENT(ctx->kqfd);
 
     /* Re-enable and check again */
     kev.flags = EV_ENABLE;
-    kevent_update(ctx->kqfd, &kev);
+    EXPECT_EQ(0, kevent(ctx->kqfd, &kev, 1, NULL, 0, NULL)) << kev;
 
     kev.flags = EV_ADD | EV_CLEAR | EV_ONESHOT;
     kev.data = 1;
-    kevent_get(&ret, ctx->kqfd);
-    kevent_cmp(&kev, &ret);
+    EXPECT_EVENT(ctx->kqfd, &ret);
+    EXPECT_EQ(kev, ret);
 }
 
 #ifdef EV_DISPATCH
@@ -123,35 +137,41 @@ test_kevent_timer_dispatch(struct test_context *ctx)
 {
     struct kevent kev, ret;
 
-    test_no_kevents(ctx->kqfd);
+    EXPECT_NO_EVENT(ctx->kqfd);
 
-    kevent_add(ctx->kqfd, &kev, 4, EVFILT_TIMER, EV_ADD | EV_DISPATCH, 0, 800, NULL);
+    kev = KEventCreate(4, EVFILT_TIMER, EV_ADD | EV_DISPATCH, 0, 800);
+    EXPECT_EQ(0, kevent(ctx->kqfd, &kev, 1, NULL, 0, NULL)) << strerror(errno)
+                                                            << " - " << kev;
 
     /* Get one event */
     kev.flags = EV_ADD | EV_CLEAR | EV_DISPATCH;
     kev.data = 1;
-    kevent_get(&ret, ctx->kqfd);
-    kevent_cmp(&kev, &ret);
+    EXPECT_EVENT(ctx->kqfd, &ret);
+    EXPECT_EQ(kev, ret);
 
     /* Confirm that the knote is disabled */
     sleep(1);
-    test_no_kevents(ctx->kqfd);
+    EXPECT_NO_EVENT(ctx->kqfd);
 
     /* Enable the knote and make sure no events are pending */
-    kevent_add(ctx->kqfd, &kev, 4, EVFILT_TIMER, EV_ENABLE | EV_DISPATCH, 0, 800, NULL);
-    test_no_kevents(ctx->kqfd);
+    kev = KEventCreate(4, EVFILT_TIMER, EV_ENABLE | EV_DISPATCH, 0, 800);
+    EXPECT_EQ(0, kevent(ctx->kqfd, &kev, 1, NULL, 0, NULL)) << strerror(errno)
+                                                            << " - " << kev;
+    EXPECT_NO_EVENT(ctx->kqfd);
 
     /* Get the next event */
     sleep(1);
     kev.flags = EV_ADD | EV_CLEAR | EV_DISPATCH;
     kev.data = 1;
-    kevent_get(&ret, ctx->kqfd);
-    kevent_cmp(&kev, &ret);
+    EXPECT_EVENT(ctx->kqfd, &ret);
+    EXPECT_EQ(kev, ret);
 
     /* Remove the knote and ensure the event no longer fires */
-    kevent_add(ctx->kqfd, &kev, 4, EVFILT_TIMER, EV_DELETE, 0, 0, NULL);
+    kev = KEventCreate(4, EVFILT_TIMER, EV_DELETE);
+    EXPECT_EQ(0, kevent(ctx->kqfd, &kev, 1, NULL, 0, NULL)) << strerror(errno)
+                                                            << " - " << kev;
     sleep(1);
-    test_no_kevents(ctx->kqfd);
+    EXPECT_NO_EVENT(ctx->kqfd);
 }
 #endif  /* EV_DISPATCH */
 

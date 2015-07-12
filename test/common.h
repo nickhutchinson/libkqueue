@@ -20,26 +20,15 @@
 #include "config/config.h"
 #include <gtest/gtest.h>
 
-#if HAVE_ERR_H
-# include <err.h>
-#else
-# define err(rc,msg,...) do { perror(msg); exit(rc); } while (0)
-# define errx(rc,msg,...) do { puts(msg); exit(rc); } while (0)
-#endif
-
-#define die(str)   do { \
-    fprintf(stderr, "%s(): %s: %s\n", __func__,str, strerror(errno));\
-    abort();\
-} while (0)
-
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <signal.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #ifndef _WIN32
 #include <sys/socket.h>
@@ -61,16 +50,11 @@ struct test_context;
 
 struct unit_test {
     const char *ut_name;
-    int         ut_enabled;
     void      (*ut_func)(struct test_context *);
 };
 
 #define MAX_TESTS 50
 struct test_context {
-    struct unit_test tests[MAX_TESTS];
-    char *cur_test_id;
-    int iterations;
-    int iteration;
     int kqfd;
 
     /* EVFILT_READ and EVFILT_WRITE */
@@ -79,7 +63,166 @@ struct test_context {
 
     /* EVFILT_VNODE */
     int vnode_fd;
-    char testfile[1024];
+    char testfile[PATH_MAX];
+};
+
+inline bool
+operator==(const struct kevent &a, const struct kevent &b)
+{
+    return 0 == memcmp(&a, &b, sizeof(struct kevent));
+}
+
+inline bool
+operator!=(const struct kevent &a, const struct kevent &b)
+{
+    return !operator==(a, b);
+}
+
+inline std::ostream &
+operator<<(std::ostream &os, const struct kevent &kev)
+{
+    os << "(";
+    if (kev.filter == EVFILT_READ)
+        os << "READ";
+    else if (kev.filter == EVFILT_WRITE)
+        os << "WRITE";
+    else if (kev.filter == EVFILT_AIO)
+        os << "AIO";
+    else if (kev.filter == EVFILT_VNODE)
+        os << "VNODE";
+    else if (kev.filter == EVFILT_PROC)
+        os << "PROC";
+    else if (kev.filter == EVFILT_SIGNAL)
+        os << "SIGNAL";
+    else if (kev.filter == EVFILT_TIMER)
+        os << "TIMER";
+#ifdef EVFILT_MACHPORT
+    if (kev.filter == EVFILT_MACHPORT)
+        os << "MACHPORT";
+#endif
+    else if (kev.filter == EVFILT_FS)
+        os << "FS";
+    else if (kev.filter == EVFILT_USER)
+        os << "USER";
+#ifdef EVFILT_VM
+    else if (kev.filter == EVFILT_VM)
+        os << "VM";
+#endif
+    else
+        os << "???";
+
+    os << ", " << kev.ident << ")";
+
+    os << ", flags=";
+    if (kev.flags & EV_ADD)
+        os << "ADD ";
+    if (kev.flags & EV_ENABLE)
+        os << "ENABLE ";
+    if (kev.flags & EV_DISABLE)
+        os << "DISABLE ";
+    if (kev.flags & EV_DELETE)
+        os << "DELETE ";
+    if (kev.flags & EV_ONESHOT)
+        os << "ONESHOT ";
+    if (kev.flags & EV_CLEAR)
+        os << "CLEAR ";
+    if (kev.flags & EV_EOF)
+        os << "EOF ";
+#ifdef EV_OOBAND
+    if (kev.flags & EV_OOBAND)
+        os << "OOBAND ";
+#endif
+    if (kev.flags & EV_ERROR)
+        os << "ERROR ";
+    if (kev.flags & EV_DISPATCH)
+        os << "DISPATCH ";
+    if (kev.flags & EV_RECEIPT)
+        os << "RECEIPT ";
+    if (kev.flags)
+        os.seekp(-1, std::ios_base::end);
+
+    os << ", data=" << kev.data << ", udata=" << static_cast<void *>(kev.udata);
+
+    return os;
+}
+
+inline ::testing::AssertionResult
+ExpectEventImpl(const char * /*kq_expr*/, const char * /*eventlist_expr*/,
+                int kq, struct kevent *event)
+{
+    struct kevent tmp = {};
+
+    if (!event)
+        event = &tmp;
+    else
+        memset(event, 0, sizeof(*event));
+
+    struct timespec ts = {};
+    int status = kevent(kq, NULL, 0, event, 1, &ts);
+
+    if (status == 1)
+        return ::testing::AssertionSuccess();
+    else if (status == 0)
+        return ::testing::AssertionFailure() << "no event";
+    else
+        return ::testing::AssertionFailure() << "error; status=" << status
+                                             << ", error: " << strerror(errno);
+}
+
+inline ::testing::AssertionResult
+ExpectNoEventImpl(const char * /*kq_expr*/, int kq)
+{
+    struct kevent event = {};
+
+    struct timespec ts = {};
+    int status = kevent(kq, NULL, 0, &event, 1, &ts);
+
+    if (status == 0)
+        return ::testing::AssertionSuccess();
+    else if (status == 1)
+        return ::testing::AssertionFailure() << "unexpected event: "
+                                             << ::testing::PrintToString(event);
+    else
+        return ::testing::AssertionFailure() << "error; status=" << status
+                                             << ", error: " << strerror(errno);
+}
+
+#define EXPECT_EVENT(kq, event_buf) \
+    EXPECT_PRED_FORMAT2(ExpectEventImpl, (kq), (event_buf))
+
+#define EXPECT_NO_EVENT(kq) EXPECT_PRED_FORMAT1(ExpectNoEventImpl, (kq))
+
+class KQLegacyTests : public ::testing::Test {
+public:
+    // Global to the entire test run, for compatibility with the legacy test
+    // suite.
+    static int kqfd() { return kqfd_; }
+    static void SetUpTestCase()
+    {
+        kqfd_ = kqueue();
+#ifdef _WIN32
+        /* Initialize the Winsock library */
+        WSADATA wsaData;
+        ASSERT_TRUE(WSAStartup(MAKEWORD(2, 2), &wsaData));
+#endif
+    }
+
+    static void TearDownTestCase()
+    {
+        close(kqfd_);
+        kqfd_ = -1;
+    }
+
+    virtual void SetUp()
+    {
+        memset(&legacy_context_, 0, sizeof(legacy_context_));
+        legacy_context_.kqfd = kqfd();
+    }
+
+    struct test_context *context() { return &legacy_context_; }
+private:
+    struct test_context legacy_context_;
+    static int kqfd_;
 };
 
 void test_evfilt_read(struct test_context *);
@@ -87,54 +230,22 @@ void test_evfilt_signal(struct test_context *);
 void test_evfilt_vnode(struct test_context *);
 void test_evfilt_timer(struct test_context *);
 void test_evfilt_proc(struct test_context *);
-#ifdef EVFILT_USER
 void test_evfilt_user(struct test_context *);
-#endif
 
-#define test(f,ctx,...) do {                                            \
-    assert(ctx != NULL); \
-    test_begin(ctx, "test_"#f"()\t"__VA_ARGS__); \
-    test_##f(ctx); \
-    test_end(ctx); \
-} while (/*CONSTCOND*/0)
+#define test(f, ctx, ...)    \
+    do {                     \
+        assert(ctx != NULL); \
+        test_##f(ctx);       \
+    } while (/*CONSTCOND*/ 0)
 
-extern const char * kevent_to_str(struct kevent *);
-void kevent_get(struct kevent *, int);
 void kevent_get_hires(struct kevent *, int);
-void kevent_update(int kqfd, struct kevent *kev);
 
-#define kevent_cmp(a,b) _kevent_cmp(a,b, __FILE__, __LINE__)
-void _kevent_cmp(struct kevent *, struct kevent *, const char *, int);
-
-void
-kevent_add(int kqfd, struct kevent *kev,
-        uintptr_t ident,
-        short     filter,
-        u_short   flags,
-        u_int     fflags,
-        intptr_t  data,
-        void      *udata);
-
-/* DEPRECATED: */
-#define KEV_CMP(kev,_ident,_filter,_flags) do {                 \
-    if (kev.ident != (_ident) ||                                \
-            kev.filter != (_filter) ||                          \
-            kev.flags != (_flags)) \
-        err(1, "kevent mismatch: got [%d,%d,%d] but expecting [%d,%d,%d]", \
-                (int)_ident, (int)_filter, (int)_flags,\
-                (int)kev.ident, kev.filter, kev.flags);\
-} while (0);
-
-/* Checks if any events are pending, which is an error. */
-#define test_no_kevents(a) _test_no_kevents(a, __FILE__, __LINE__)
-void _test_no_kevents(int, const char *, int);
-
-/* From test.c */
-void    test_begin(struct test_context *, const char *);
-void    test_end(struct test_context *);
-void    test_atexit(void);
-void    testing_begin(void);
-void    testing_end(void);
-int     testing_make_uid(void);
+inline struct kevent
+KEventCreate(uintptr_t ident, short filter, u_short flags, u_int fflags = 0,
+             intptr_t data = 0)
+{
+    struct kevent kev = {ident, filter, flags, fflags, data};
+    return kev;
+}
 
 #endif  /* _COMMON_H */
