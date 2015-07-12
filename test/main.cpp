@@ -14,6 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <gtest/gtest.h>
 #include "common.h"
 
 /* Maximum number of threads that can be created */
@@ -153,7 +154,7 @@ test_harness(struct unit_test tests[MAX_TESTS], int iterations)
 
     testing_begin();
 
-    ctx = calloc(1, sizeof(*ctx));
+    ctx = (struct test_context*)calloc(1, sizeof(*ctx));
 
     test(peer_close_detection, ctx);
 
@@ -172,7 +173,7 @@ test_harness(struct unit_test tests[MAX_TESTS], int iterations)
 
     n = 0;
     for (i = 0; i < iterations; i++) {
-        ctx = calloc(1, sizeof(*ctx));
+        ctx = (struct test_context*)calloc(1, sizeof(*ctx));
         if (ctx == NULL)
             abort();
         ctx->iteration = n++;
@@ -200,9 +201,46 @@ usage(void)
     exit(1);
 }
 
+static struct LegacyTestInfo {
+    struct unit_test *tests;
+    int iterations;
+} g_legacy_test_config;
+
+TEST(KQLegacyTests, AllTests)
+{
+    EXPECT_EXIT({
+        test_harness(g_legacy_test_config.tests,
+                     g_legacy_test_config.iterations);
+        fprintf(stderr, "KQLegacyTest - DONE\n");
+        exit(0);
+    }, ::testing::ExitedWithCode(0), "KQLegacyTest - DONE");
+}
+
+class KQTestEnvironment : public ::testing::Environment {
+public:
+    virtual ~KQTestEnvironment() {}
+
+    virtual void SetUp()
+    {
+#ifdef _WIN32
+        /* Initialize the Winsock library */
+        WSADATA wsaData;
+        ASSERT_TRUE(WSAStartup(MAKEWORD(2, 2), &wsaData));
+#endif
+    }
+
+    // Override this to define how to tear down the environment.
+    virtual void TearDown() {}
+};
+
 int
 main(int argc, char **argv)
 {
+    ::testing::AddGlobalTestEnvironment(new KQTestEnvironment);
+    // Ensures we fork-exec before starting KQLegacyTests.
+    ::testing::GTEST_FLAG(death_test_style) = "threadsafe";
+    ::testing::InitGoogleTest(&argc, argv);
+
     struct unit_test tests[MAX_TESTS] = {
         { "socket", 1, test_evfilt_read },
 #if !defined(_WIN32) && !defined(__ANDROID__)
@@ -226,12 +264,6 @@ main(int argc, char **argv)
     char *arg;
     int match;
 
-#ifdef _WIN32
-    /* Initialize the Winsock library */
-    WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0)
-        err(1, "WSAStartup failed");
-#endif
 
     iterations = 1;
 
@@ -274,8 +306,7 @@ main(int argc, char **argv)
         }
     }
 #endif
-
-    test_harness(tests, iterations);
-
-    return (0);
+    g_legacy_test_config.tests = tests;
+    g_legacy_test_config.iterations = iterations;
+    return RUN_ALL_TESTS();
 }

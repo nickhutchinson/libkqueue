@@ -17,26 +17,26 @@
 #files
 if(UNIX)
     set(SRC
-        main.c
-        kevent.c
-        test.c
-        proc.c
-        read.c
-        signal.c
-        timer.c
-        vnode.c
-        user.c
+        main.cpp
+        kevent.cpp
+        test.cpp
+        proc.cpp
+        read.cpp
+        signal.cpp
+        timer.cpp
+        vnode.cpp
+        user.cpp
     )
 else()
     set(SRC
         common.h
-        kevent.c
-        main.c
-        read.c
-        test.c
-        timer.c
-        user.c
-        vnode.c
+        kevent.cpp
+        main.cpp
+        read.cpp
+        test.cpp
+        timer.cpp
+        user.cpp
+        vnode.cpp
     )
 endif()
 
@@ -55,6 +55,21 @@ else()
     set(LIBS wsock32)
 endif()
 
+add_library(gtest STATIC googletest/src/gtest-all.cc)
+target_include_directories(gtest PUBLIC googletest/include PRIVATE googletest)
+
 add_executable(libkqueue-test ${SRC})
-target_link_libraries(libkqueue-test kqueue_shared ${LIBS})
+target_compile_definitions(libkqueue-test PRIVATE LIBKQUEUE)
+target_link_libraries(libkqueue-test kqueue_shared ${LIBS} gtest)
 set_target_properties(libkqueue-test PROPERTIES DEBUG_POSTFIX "D")
+
+if (NOT CMAKE_VERSION VERSION_LESS 3.2)
+    set (USES_TERMINAL_FLAG USES_TERMINAL)
+else ()
+    set (USES_TERMINAL_FLAG "")
+endif ()
+
+add_custom_target(check
+    libkqueue-test
+    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+    VERBATIM ${USES_TERMINAL_FLAG})
