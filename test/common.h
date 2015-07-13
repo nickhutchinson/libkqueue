@@ -81,6 +81,25 @@ struct test_context {
     char testfile[1024];
 };
 
+class KqueueLegacyTestFixtureBase : public ::testing::Test {
+public:
+    // Global to the entire test run, for compatibility with the legacy test
+    // suite.
+    static int kqfd() { return kqfd_; }
+    static void set_kqfd(int fd) { kqfd_ = fd; }
+
+    static const struct unit_test *legacy_tests() { return tests_; }
+    static void set_legacy_tests(const unit_test* tests) { tests_ = tests; }
+
+    static int legacy_iterations() { return iterations_; }
+    static void set_legacy_iterations(int iterations) { iterations_ = iterations; }
+
+private:
+    static int kqfd_;
+    static const struct unit_test* tests_;
+    static int iterations_;
+};
+
 void test_evfilt_read(struct test_context *);
 void test_evfilt_signal(struct test_context *);
 void test_evfilt_vnode(struct test_context *);

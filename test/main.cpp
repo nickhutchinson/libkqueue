@@ -17,19 +17,18 @@
 #include <gtest/gtest.h>
 #include "common.h"
 
-/* Maximum number of threads that can be created */
-#define MAX_THREADS 100
-
-void
-test_kqueue_descriptor_is_pollable(void)
-{
+int KqueueLegacyTestFixtureBase::kqfd_ = -1;
+const struct unit_test* KqueueLegacyTestFixtureBase::tests_;
+int KqueueLegacyTestFixtureBase::iterations_ = -1;
+////////////////////////////////////////////////////////////////////////////////
+TEST(KQueue, IsPollable) {
     int kq, rv;
     struct kevent kev;
     fd_set fds;
     struct timeval tv;
 
-    if ((kq = kqueue()) < 0)
-        die("kqueue()");
+    kq = kqueue();
+    EXPECT_GE(kq, 0);
 
     test_no_kevents(kq);
     kevent_add(kq, &kev, 2, EVFILT_TIMER, EV_ADD | EV_ONESHOT, 0, 1000, NULL);
@@ -37,16 +36,12 @@ test_kqueue_descriptor_is_pollable(void)
 
     FD_ZERO(&fds);
     FD_SET(kq, &fds);
-    tv.tv_sec = 5;
+    tv.tv_sec = 0;
     tv.tv_usec = 0;
     rv = select(1, &fds, NULL, NULL, &tv);
-    if (rv < 0)
-        die("select() error");
-    if (rv == 0)
-        die("select() no events");
-    if (!FD_ISSET(kq, &fds)) {
-        die("descriptor is not ready for reading");
-    }
+    EXPECT_GE(rv, 0) << "select() error";
+    EXPECT_GE(rv, 1) << "select() no events";
+    EXPECT_TRUE(FD_ISSET(kq, &fds)) << "descriptor is not ready for reading";
 
     close(kq);
 }
@@ -55,73 +50,62 @@ test_kqueue_descriptor_is_pollable(void)
  * Test the method for detecting when one end of a socketpair
  * has been closed. This technique is used in kqueue_validate()
  */
-static void
-test_peer_close_detection(void *unused)
-{
 #ifdef _WIN32
-    return;
-    //FIXME
+// FIXME
 #else
+TEST(KQueue, PeerCloseDetection) {
     int sockfd[2];
     char buf[1];
     struct pollfd pfd;
 
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockfd) < 0)
-        die("socketpair");
+        FAIL() << "socketpair";
 
     pfd.fd = sockfd[0];
     pfd.events = POLLIN | POLLHUP;
     pfd.revents = 0;
 
     if (poll(&pfd, 1, 0) > 0)
-        die("unexpected data");
+        FAIL() << "unexpected data";
 
     if (close(sockfd[1]) < 0)
-        die("close");
+        FAIL() << "close";
 
     if (poll(&pfd, 1, 0) > 0) {
         if (recv(sockfd[0], buf, sizeof(buf), MSG_PEEK | MSG_DONTWAIT) != 0)
-            die("failed to detect peer shutdown");
+            FAIL() << "failed to detect peer shutdown";
     }
-#endif
 }
+#endif
 
-void
-test_kqueue(void *unused)
-{
+TEST(KQueue, BasicUsage) {
     int kqfd;
 
-    if ((kqfd = kqueue()) < 0)
-        die("kqueue()");
+    kqfd = kqueue();
+    EXPECT_GE(kqfd, 0);
     test_no_kevents(kqfd);
-    if (close(kqfd) < 0)
-        die("close()");
+    EXPECT_EQ(0, close(kqfd));
 }
 
-void
-test_kevent(void *unused)
-{
+TEST(KQueue, BadFd) {
     struct kevent kev;
-
     memset(&kev, 0, sizeof(kev));
-
     /* Provide an invalid kqueue descriptor */
-    if (kevent(-1, &kev, 1, NULL, 0, NULL) == 0)
-        die("invalid kq parameter");
+    EXPECT_NE(0, kevent(-1, &kev, 1, NULL, 0, NULL));
+    EXPECT_EQ(EBADF, errno);
 }
 
-void
-test_ev_receipt(void *unused)
+TEST(KQueue, EVFILT_RECEIPT)
 {
     int kq;
     struct kevent kev;
 
     if ((kq = kqueue()) < 0)
-        die("kqueue()");
+        FAIL() << "kqueue()";
 #if !defined(_WIN32)
     EV_SET(&kev, SIGUSR2, EVFILT_SIGNAL, EV_ADD | EV_RECEIPT, 0, 0, NULL);
-    if (kevent(kq, &kev, 1, &kev, 1, NULL) < 0)
-        die("kevent");
+    int ret = kevent(kq, &kev, 1, &kev, 1, NULL);
+    ASSERT_EQ(1, ret);
 
     /* TODO: check the receipt */
 
@@ -130,62 +114,6 @@ test_ev_receipt(void *unused)
     memset(&kev, 0, sizeof(kev));
     puts("Skipped -- EV_RECEIPT is not available or running on Win32");
 #endif
-}
-
-void
-run_iteration(struct test_context *ctx)
-{
-    struct unit_test *test;
-
-    for (test = &ctx->tests[0]; test->ut_name != NULL; test++) {
-        if (test->ut_enabled)
-            test->ut_func(ctx);
-    }
-    free(ctx);
-}
-
-void
-test_harness(struct unit_test tests[MAX_TESTS], int iterations)
-{
-    int i, n, kqfd;
-    struct test_context *ctx;
-
-    printf("Running %d iterations\n", iterations);
-
-    testing_begin();
-
-    ctx = (struct test_context*)calloc(1, sizeof(*ctx));
-
-    test(peer_close_detection, ctx);
-
-    test(kqueue, ctx);
-    test(kevent, ctx);
-
-    if ((kqfd = kqueue()) < 0)
-        die("kqueue()");
-
-    test(ev_receipt, ctx);
-    /* TODO: this fails now, but would be good later
-    test(kqueue_descriptor_is_pollable);
-    */
-
-    free(ctx);
-
-    n = 0;
-    for (i = 0; i < iterations; i++) {
-        ctx = (struct test_context*)calloc(1, sizeof(*ctx));
-        if (ctx == NULL)
-            abort();
-        ctx->iteration = n++;
-        ctx->kqfd = kqfd;
-        memcpy(&ctx->tests, tests, sizeof(ctx->tests));
-        ctx->iterations = iterations;
-
-        run_iteration(ctx);
-    }
-    testing_end();
-
-    close(kqfd);
 }
 
 void
@@ -201,19 +129,39 @@ usage(void)
     exit(1);
 }
 
-static struct LegacyTestInfo {
-    struct unit_test *tests;
-    int iterations;
-} g_legacy_test_config;
-
-TEST(KQLegacyTests, AllTests)
+class KQLegacyTests : public KqueueLegacyTestFixtureBase {};
+TEST_F(KQLegacyTests, AllTests)
 {
-    EXPECT_EXIT({
-        test_harness(g_legacy_test_config.tests,
-                     g_legacy_test_config.iterations);
-        fprintf(stderr, "KQLegacyTest - DONE\n");
-        exit(0);
-    }, ::testing::ExitedWithCode(0), "KQLegacyTest - DONE");
+    int i, n;
+    struct test_context *ctx;
+
+    int iterations = legacy_iterations();
+    const struct unit_test* tests = legacy_tests();
+
+    fprintf(stderr, "Running %d iterations\n", iterations);
+    ASSERT_GE(kqfd(), 0);
+
+    testing_begin();
+
+    n = 0;
+    for (i = 0; i < iterations; i++) {
+        ctx = (struct test_context*)calloc(1, sizeof(*ctx));
+        if (ctx == NULL)
+            abort();
+        ctx->iteration = n++;
+        ctx->kqfd = kqfd();
+        memcpy(&ctx->tests, tests, sizeof(ctx->tests));
+        ctx->iterations = iterations;
+
+        struct unit_test *test;
+
+        for (test = &ctx->tests[0]; test->ut_name != NULL; test++) {
+            if (test->ut_enabled)
+                test->ut_func(ctx);
+        }
+        free(ctx);
+    }
+    testing_end();
 }
 
 class KQTestEnvironment : public ::testing::Environment {
@@ -222,6 +170,7 @@ public:
 
     virtual void SetUp()
     {
+        KqueueLegacyTestFixtureBase::set_kqfd(kqueue());
 #ifdef _WIN32
         /* Initialize the Winsock library */
         WSADATA wsaData;
@@ -229,19 +178,13 @@ public:
 #endif
     }
 
-    // Override this to define how to tear down the environment.
-    virtual void TearDown() {}
+    virtual void TearDown() { close(KqueueLegacyTestFixtureBase::kqfd()); }
 };
 
-int
-main(int argc, char **argv)
-{
-    ::testing::AddGlobalTestEnvironment(new KQTestEnvironment);
-    // Ensures we fork-exec before starting KQLegacyTests.
-    ::testing::GTEST_FLAG(death_test_style) = "threadsafe";
-    ::testing::InitGoogleTest(&argc, argv);
 
-    struct unit_test tests[MAX_TESTS] = {
+static void InitLegacyTests(int* argc_ptr, char **argv)
+{
+    static struct unit_test tests[MAX_TESTS] = {
         { "socket", 1, test_evfilt_read },
 #if !defined(_WIN32) && !defined(__ANDROID__)
         // XXX-FIXME -- BROKEN ON LINUX WHEN RUN IN A SEPARATE THREAD
@@ -269,7 +212,7 @@ main(int argc, char **argv)
 
 /* Windows does not provide a POSIX-compatible getopt */
 #ifndef _WIN32
-    while ((c = getopt (argc, argv, "hn:")) != -1) {
+    while ((c = getopt (*argc_ptr, argv, "hn:")) != -1) {
         switch (c) {
             case 'h':
                 usage();
@@ -283,12 +226,12 @@ main(int argc, char **argv)
     }
 
     /* If specific tests are requested, disable all tests by default */
-    if (optind < argc) {
+    if (optind < *argc_ptr) {
         for (test = &tests[0]; test->ut_name != NULL; test++) {
             test->ut_enabled = 0;
         }
     }
-    for (i = optind; i < argc; i++) {
+    for (i = optind; i < *argc_ptr; i++) {
         match = 0;
         arg = argv[i];
         for (test = &tests[0]; test->ut_name != NULL; test++) {
@@ -306,7 +249,14 @@ main(int argc, char **argv)
         }
     }
 #endif
-    g_legacy_test_config.tests = tests;
-    g_legacy_test_config.iterations = iterations;
+    KqueueLegacyTestFixtureBase::set_legacy_iterations(iterations);
+    KqueueLegacyTestFixtureBase::set_legacy_tests(tests);
+}
+
+int main(int argc, char** argv)
+{
+    ::testing::InitGoogleTest(&argc, argv);
+    InitLegacyTests(&argc, argv);
+    ::testing::AddGlobalTestEnvironment(new KQTestEnvironment);
     return RUN_ALL_TESTS();
 }

@@ -22,11 +22,6 @@ include(CheckSymbolExists)
 
 project(kqueue C)
 
-check_language(CXX)
-if(CMAKE_CXX_COMPILER)
-    enable_language(CXX)
-endif ()
-
 set(KQUEUE_VERSION 2.0.4)
 set(KQUEUE_ABI_VERSION 0)
 
@@ -128,6 +123,7 @@ endforeach ()
 
 #tests
 option(KQUEUE_ENABLE_TEST_SUITE "Enable to build tests for libkqueue" OFF)
+check_language(CXX)
 if(KQUEUE_ENABLE_TEST_SUITE AND NOT CMAKE_CXX_COMPILER)
     message(WARNING
             "No C++ compiler is available; unable to build test suite")

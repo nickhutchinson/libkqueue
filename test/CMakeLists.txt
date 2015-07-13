@@ -13,6 +13,16 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
+cmake_minimum_required(VERSION 2.8.12)
+
+project(KQTests CXX)
+
+set(kqueue_lib )
+if (TARGET kqueue_shared)
+    set(kqueue_lib kqueue_shared)
+elseif(CMAKE_SYSTEM_NAME MATCHES Darwin)
+    set(kqueue_lib )
+endif()
 
 #files
 if(UNIX)
@@ -60,7 +70,7 @@ target_include_directories(gtest PUBLIC googletest/include PRIVATE googletest)
 
 add_executable(libkqueue-test ${SRC})
 target_compile_definitions(libkqueue-test PRIVATE LIBKQUEUE)
-target_link_libraries(libkqueue-test kqueue_shared ${LIBS} gtest)
+target_link_libraries(libkqueue-test ${kqueue_lib} ${LIBS} gtest)
 set_target_properties(libkqueue-test PROPERTIES DEBUG_POSTFIX "D")
 
 if (NOT CMAKE_VERSION VERSION_LESS 3.2)
