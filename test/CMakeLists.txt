@@ -70,6 +70,6 @@ else ()
 endif ()
 
 add_custom_target(check
-    libkqueue-test
+    libkqueue-test -n 5
     WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
     VERBATIM ${USES_TERMINAL_FLAG})
