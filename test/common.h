@@ -17,7 +17,8 @@
 #ifndef _COMMON_H
 #define _COMMON_H
 
-#include "config.h"
+#include "config/config.h"
+#include <gtest/gtest.h>
 
 #if HAVE_ERR_H
 # include <err.h>

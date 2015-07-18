@@ -15,10 +15,7 @@
 #
 cmake_minimum_required(VERSION 2.8.12)
 
-include(CheckFunctionExists)
-include(CheckIncludeFile)
 include(CheckLanguage)
-include(CheckSymbolExists)
 
 project(kqueue C)
 
@@ -29,16 +26,9 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE MinSizeRel)
 endif ()
 
-check_symbol_exists(EPOLLRDHUP sys/epoll.h HAVE_DECL_EPOLLRDHUP)
-check_symbol_exists(PORT_SOURCE_FILE sys/port.h HAVE_DECL_PORT_SOURCE_FILE)
-check_function_exists(ppoll HAVE_PPOLL)
-check_include_file(err.h HAVE_ERR_H)
-check_include_file(sys/eventfd.h HAVE_SYS_EVENTFD_H)
-check_include_file(sys/signalfd.h HAVE_SYS_SIGNALFD_H)
-check_include_file(sys/timerfd.h HAVE_SYS_TIMERFD_H)
+include(config/config.cmake)
+configure_file(config/config.h.in "${CMAKE_CURRENT_BINARY_DIR}/config/config.h")
 
-configure_file(config.h.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/config.h")
-include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
 #files
 file(GLOB_RECURSE INCL include/*.h)
@@ -101,6 +91,7 @@ source_group(src FILES ${SRC})
 
 #includes
 include_directories( include )
+include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
 #library (static or shared)
 add_library(kqueue_shared STATIC ${SRC} ${INCL})
