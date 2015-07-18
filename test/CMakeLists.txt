@@ -50,16 +50,7 @@ else()
     )
 endif()
 
-
-#includes
-include_directories(
-	../include
-)
-
 if(UNIX)
-    add_definitions(
-        -rdynamic
-    )
     set(LIBS pthread rt)
 else()
     set(LIBS wsock32)
