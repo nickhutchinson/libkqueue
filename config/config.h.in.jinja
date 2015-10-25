@@ -4,7 +4,7 @@
 /* Define to 1 if you have the <{{header}}> header file. */
 {% endfilter %}
 
-#cmakedefine01 HAVE_{{header|uppercase_identifier}}
+#cmakedefine HAVE_{{header|uppercase_identifier}} 1
 {% endfor %}
 
 {% for decl in decls %}
@@ -22,5 +22,5 @@
 /* Define to 1 if you have the `{{function}}' function. */
 {% endfilter %}
 
-#cmakedefine01 HAVE_{{function|uppercase_identifier}}
+#cmakedefine HAVE_{{function|uppercase_identifier}} 1
 {% endfor %}

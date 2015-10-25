@@ -23,7 +23,7 @@ set(KQUEUE_VERSION 2.0.4)
 set(KQUEUE_ABI_VERSION 0)
 
 if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE MinSizeRel)
+    set(CMAKE_BUILD_TYPE Release)
 endif ()
 
 include(config/config.cmake)
@@ -86,6 +86,10 @@ else()
         -D_GNU_SOURCE
         -fvisibility=hidden
     )
+    if (CMAKE_BUILD_TYPE MATCHES Release)
+        # Always add debug symbols
+        add_definitions(-g)
+    endif ()
 endif()
 source_group(src FILES ${SRC})
 

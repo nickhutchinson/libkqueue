@@ -1,14 +1,14 @@
 /* Define to 1 if you have the <err.h> header file. */
-#cmakedefine01 HAVE_ERR_H
+#cmakedefine HAVE_ERR_H 1
 
 /* Define to 1 if you have the <sys/eventfd.h> header file. */
-#cmakedefine01 HAVE_SYS_EVENTFD_H
+#cmakedefine HAVE_SYS_EVENTFD_H 1
 
 /* Define to 1 if you have the <sys/signalfd.h> header file. */
-#cmakedefine01 HAVE_SYS_SIGNALFD_H
+#cmakedefine HAVE_SYS_SIGNALFD_H 1
 
 /* Define to 1 if you have the <sys/timerfd.h> header file. */
-#cmakedefine01 HAVE_SYS_TIMERFD_H
+#cmakedefine HAVE_SYS_TIMERFD_H 1
 
 /* Define to 1 if you have the declaration of `EPOLLRDHUP', and to 0 if you
    don't. */
@@ -19,4 +19,4 @@
 #cmakedefine01 HAVE_DECL_PORT_SOURCE_FILE
 
 /* Define to 1 if you have the `ppoll' function. */
-#cmakedefine01 HAVE_PPOLL
+#cmakedefine HAVE_PPOLL 1
