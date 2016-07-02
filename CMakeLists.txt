@@ -22,7 +22,7 @@ set(KQUEUE_VERSION 2.0.4)
 set(KQUEUE_ABI_VERSION 0)
 
 if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE MinSizeRel)
+    set(CMAKE_BUILD_TYPE Release)
 endif ()
 
 include(config/config.cmake)
