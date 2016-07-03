@@ -1,0 +1,14 @@
+---
+Language:        Cpp
+BasedOnStyle:  Google
+BreakBeforeBraces: WebKit
+AccessModifierOffset: -4
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakAfterReturnType:  TopLevel
+BinPackArguments: true
+BinPackParameters: true
+IndentWidth:     4
+PointerAlignment: Right
+...
+
